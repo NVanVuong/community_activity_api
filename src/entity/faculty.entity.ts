@@ -1,12 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  OneToOne,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Clazz } from './clazz.entity';
-import { Organizer } from './organizer.entity';
 import { User } from './user.entity';
 
 @Entity()
@@ -25,7 +18,4 @@ export class Faculty {
 
   @OneToMany(() => User, (user) => user.faculty)
   users: User[];
-
-  @OneToOne(() => Organizer, (organizer) => organizer.faculty)
-  organizer: Organizer[];
 }
