@@ -92,17 +92,4 @@ export class FacultiesService {
 
     return faculty.clazzes;
   }
-
-  async getFacultyOrganizer(id: string) {
-    const faculty = await this.facultyRepository.findOne({
-      where: { id },
-      relations: ['organizer'],
-    });
-
-    if (!faculty) {
-      throw new NotFoundException('Faculty not found');
-    }
-
-    return faculty.organizer;
-  }
 }

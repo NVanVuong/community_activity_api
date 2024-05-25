@@ -17,7 +17,7 @@ export class Clazz {
   @Column({ unique: true })
   name: string;
 
-  @ManyToOne(() => Faculty, (faculty) => faculty.clazzes)
+  @ManyToOne(() => Faculty, (faculty) => faculty.clazzes, { eager: true })
   faculty: Faculty;
 
   @ManyToOne(() => AcademicYear, (academicYear) => academicYear.clazzes)

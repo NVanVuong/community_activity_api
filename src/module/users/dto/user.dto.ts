@@ -9,8 +9,6 @@ export class UserDto extends User {}
 export class UserStudentDto extends UserDto {
   @Exclude()
   faculty: Faculty;
-  @Exclude()
-  clazz: Clazz;
 }
 
 @Expose()

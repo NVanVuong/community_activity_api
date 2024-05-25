@@ -13,7 +13,7 @@ import { plainToInstance } from 'class-transformer';
 import { UserStudentDto } from './dto/user.dto';
 import { DEFAULT_PASSWORD } from 'src/common/constants';
 import { FacultiesService } from '../faculties/faculties.service';
-import { RoleEnum } from '../roles/dto/roles.dto';
+import { RoleEnum } from 'src/common/enum/role.enum';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 

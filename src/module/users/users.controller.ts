@@ -17,8 +17,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
 import { CurrentUser } from 'src/decorator/current-user.decorator';
 import { User } from 'src/entity/user.entity';
-import { RoleEnum } from '../roles/dto/roles.dto';
 import { Roles } from 'src/decorator/roles.decorator';
+import { RoleEnum } from 'src/common/enum/role.enum';
 
 @Controller('users')
 export class UsersController {

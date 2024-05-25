@@ -1,5 +1,5 @@
+import { RoleEnum } from 'src/common/enum/role.enum';
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
-import { RoleEnum } from 'src/module/roles/dto/roles.dto';
 
 @Entity()
 export class Role {

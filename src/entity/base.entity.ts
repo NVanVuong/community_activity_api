@@ -11,6 +11,13 @@ export abstract class Base extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ nullable: true })
+  createdId: string;
+
+  @Exclude()
+  @Column({ nullable: true })
+  updatedId: string;
+
   @Exclude()
   @CreateDateColumn()
   createdAt: Date;
@@ -18,14 +25,6 @@ export abstract class Base extends BaseEntity {
   @Exclude()
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @Exclude()
-  @Column({ nullable: true })
-  createdId: string;
-
-  @Exclude()
-  @Column({ nullable: true })
-  updatedId: string;
 
   @Exclude()
   @Column({ nullable: true })
