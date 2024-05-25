@@ -1,9 +1,10 @@
-import { Column, Entity, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
 import { Clazz } from './clazz.entity';
 import { Exclude } from 'class-transformer';
 import { Faculty } from './faculty.entity';
-import { RoleEnum } from 'src/module/roles/dto/roles.dto';
 import { UUID } from 'crypto';
+import { UserActivity } from './user-activity.entity';
+import { RoleEnum } from 'src/common/enum/role.enum';
 
 @Entity()
 export class User {
@@ -43,4 +44,7 @@ export class User {
 
   @ManyToOne(() => Faculty, (faculty) => faculty.users, { eager: true })
   faculty: Faculty;
+
+  @OneToMany(() => UserActivity, (userActivity) => userActivity.user)
+  userActivities: UserActivity[];
 }

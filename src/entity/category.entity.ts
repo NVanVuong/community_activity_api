@@ -1,8 +1,8 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { ActivitySubcategory } from './activity-subcategory.entity';
+import { Subcategory } from './subcategory.entity';
 
 @Entity()
-export class ActivityCategory {
+export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -13,11 +13,11 @@ export class ActivityCategory {
   index: number;
 
   @OneToMany(
-    () => ActivitySubcategory,
-    (activitySubcategory) => activitySubcategory.activityCategory,
+    () => Subcategory,
+    (activitySubcategory) => activitySubcategory.category,
     {
       eager: true,
     },
   )
-  activitySubcategories: ActivitySubcategory[];
+  subcategories: Subcategory[];
 }

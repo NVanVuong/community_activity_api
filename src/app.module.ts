@@ -1,3 +1,6 @@
+import { ProofsModule } from './module/proof/proofs.module';
+import { UserActivitiesModule } from './module/user-activities/user-activities.module';
+import { ActivitiesModule } from './module/activities/activities.module';
 import { CategoriesModule } from './module/categories/categories.module';
 import { RolesModule } from './module/roles/roles.module';
 import { ImportsModule } from './module/imports/imports.module';
@@ -13,6 +16,9 @@ import { UsersModule } from './module/users/users.module';
 
 @Module({
   imports: [
+    ProofsModule,
+    UserActivitiesModule,
+    ActivitiesModule,
     CategoriesModule,
     AuthModule,
     UsersModule,

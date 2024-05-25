@@ -3,12 +3,13 @@ import { CategoriesController } from './categories.controller';
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ActivityCategory } from 'src/entity/activity-category.entity';
-import { ActivitySubcategory } from 'src/entity/activity-subcategory.entity';
+import { Subcategory } from 'src/entity/subcategory.entity';
+import { Category } from 'src/entity/category.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ActivityCategory, ActivitySubcategory])],
+  imports: [TypeOrmModule.forFeature([Category, Subcategory])],
   controllers: [CategoriesController],
   providers: [CategoriesService],
+  exports: [CategoriesService],
 })
 export class CategoriesModule {}

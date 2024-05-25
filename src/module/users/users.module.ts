@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { FacultiesModule } from '../faculties/faculties.module';
 import { ClazzesModule } from '../clazzes/clazzes.module';
 import { RolesModule } from '../roles/roles.module';
+import { UserActivitiesModule } from '../user-activities/user-activities.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RolesModule } from '../roles/roles.module';
     FacultiesModule,
     ClazzesModule,
     RolesModule,
+    UserActivitiesModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

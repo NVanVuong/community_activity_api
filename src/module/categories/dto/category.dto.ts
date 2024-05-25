@@ -1,9 +1,9 @@
-export class ActivityCategoryDto {
+export class CategoryDto {
   name: string;
   index: number;
 }
 
-export class ActivitySubcategoryDto {
+export class SubcategoryDto {
   name: string;
   minScore: number;
   maxScore: number;

@@ -1,107 +1,111 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ActivityCategory } from 'src/entity/activity-category.entity';
-import { ActivitySubcategory } from 'src/entity/activity-subcategory.entity';
+
+import { Subcategory } from 'src/entity/subcategory.entity';
 import { Repository } from 'typeorm';
-import {
-  ActivityCategoryDto,
-  ActivitySubcategoryDto,
-} from './dto/category.dto';
+import { CategoryDto, SubcategoryDto } from './dto/category.dto';
+import { Category } from 'src/entity/category.entity';
 
 @Injectable()
 export class CategoriesService {
   constructor(
-    @InjectRepository(ActivityCategory)
-    private activityCategoryRepository: Repository<ActivityCategory>,
-    @InjectRepository(ActivitySubcategory)
-    private activitySubcategoryRepository: Repository<ActivitySubcategory>,
+    @InjectRepository(Category)
+    private categoryRepository: Repository<Category>,
+    @InjectRepository(Subcategory)
+    private subcategoryRepository: Repository<Subcategory>,
   ) {}
 
-  async getActivityCategories() {
-    return await this.activityCategoryRepository.find();
+  async getCategories() {
+    return await this.categoryRepository.find();
   }
 
-  async getActivityCategoryById(id: string) {
-    console.log('id', id);
+  async getCategory(id: string) {
+    const category = await this.categoryRepository.findOne({ where: { id } });
 
-    return await this.activityCategoryRepository.findOne({ where: { id } });
+    if (!category) {
+      throw new BadRequestException('Category not found');
+    }
+
+    return category;
   }
 
-  async getActivitySubcategoryById(id: string) {
-    return await this.activitySubcategoryRepository.findOne({ where: { id } });
+  async getSubcategory(id: string) {
+    const subcategory = await this.subcategoryRepository.findOne({
+      where: { id },
+    });
+
+    if (!subcategory) {
+      throw new BadRequestException('Subcategory not found');
+    }
+
+    return subcategory;
   }
 
-  async getActivitySubcategoriesByCategoryId(categoryId: string) {
-    return await this.activitySubcategoryRepository.find({
-      where: { activityCategory: { id: categoryId } },
+  async getSubcategoriesByCategoryId(categoryId: string) {
+    return await this.subcategoryRepository.find({
+      where: { category: { id: categoryId } },
     });
   }
 
-  async createActivityCategory(activityCategoryDto: ActivityCategoryDto) {
-    const activityCategory =
-      this.activityCategoryRepository.create(activityCategoryDto);
-    return await this.activityCategoryRepository.save(activityCategory);
+  async createCategory(categoryDto: CategoryDto) {
+    const Category = this.categoryRepository.create(categoryDto);
+    return await this.categoryRepository.save(Category);
   }
 
-  async createActivityCategories(activityCategories: ActivityCategoryDto[]) {
-    const newActivityCategories = activityCategories.map((category) =>
-      this.activityCategoryRepository.create(category),
+  async createCategories(categories: CategoryDto[]) {
+    const newCategories = categories.map((category) =>
+      this.categoryRepository.create(category),
     );
-    return await this.activityCategoryRepository.save(newActivityCategories);
+    return await this.categoryRepository.save(newCategories);
   }
 
-  async createActivitySubcategory(
-    activitySubcategoryDto: ActivitySubcategoryDto,
-  ) {
-    const { name, minScore, maxScore, categoryIndex } = activitySubcategoryDto;
-    const activityCategory = await this.activityCategoryRepository.findOne({
+  async createSubcategory(subcategoryDto: SubcategoryDto) {
+    const { name, minScore, maxScore, categoryIndex } = subcategoryDto;
+    const category = await this.categoryRepository.findOne({
       where: { index: categoryIndex },
     });
-    const newActivitySubcategory = this.activitySubcategoryRepository.create({
+    const newSubcategory = this.subcategoryRepository.create({
       name,
       minScore,
       maxScore,
-      activityCategory,
+      category,
     });
-    return await this.activitySubcategoryRepository.save(
-      newActivitySubcategory,
+
+    return await this.subcategoryRepository.save(newSubcategory);
+  }
+
+  async createSubcategories(subcategories: SubcategoryDto[]) {
+    const createdSubcategories = await Promise.all(
+      subcategories.map(async (subcategory) => {
+        return this.createSubcategory(subcategory);
+      }),
     );
+    return createdSubcategories;
   }
 
-  async createActivitySubcategories(
-    activitySubcategories: ActivitySubcategoryDto[],
-  ) {
-    return activitySubcategories.map((subcategory) =>
-      this.createActivitySubcategory(subcategory),
-    );
+  async deleteCategory(id: string) {
+    return await this.categoryRepository.delete(id);
   }
 
-  async deleteActivityCategory(id: string) {
-    return await this.activityCategoryRepository.delete(id);
+  async deleteSubcategory(id: string) {
+    return await this.subcategoryRepository.delete(id);
   }
 
-  async deleteActivitySubcategory(id: string) {
-    return await this.activitySubcategoryRepository.delete(id);
+  async updateCategory(id: string, name: string) {
+    return await this.categoryRepository.update(id, { name });
   }
 
-  async updateActivityCategory(id: string, name: string) {
-    return await this.activityCategoryRepository.update(id, { name });
-  }
-
-  async updateActivitySubcategory(
-    id: string,
-    activitySubcategoryDto: ActivitySubcategoryDto,
-  ) {
-    const { name, minScore, maxScore, categoryIndex } = activitySubcategoryDto;
-    const activityCategory = await this.activityCategoryRepository.findOne({
+  async updateSubcategory(id: string, SubcategoryDto: SubcategoryDto) {
+    const { name, minScore, maxScore, categoryIndex } = SubcategoryDto;
+    const category = await this.categoryRepository.findOne({
       where: { index: categoryIndex },
     });
 
-    return await this.activitySubcategoryRepository.update(id, {
+    return await this.subcategoryRepository.update(id, {
       name,
       minScore,
       maxScore,
-      activityCategory,
+      category,
     });
   }
 }
