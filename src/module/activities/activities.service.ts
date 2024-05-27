@@ -22,8 +22,26 @@ export class ActivitiesService {
     private userActivitiesService: UserActivitiesService,
   ) {}
 
-  async getActivities() {
-    return this.activityRepository.find();
+  async getActivities(user: User) {
+    const activities = await this.activityRepository.find({
+      where: { isExternal: false },
+    });
+
+    const activityDtos = await Promise.all(
+      activities.map(async (activity) => {
+        const activityDto = plainToInstance(ActivityDto, activity);
+
+        activityDto.isRegistrationExpired =
+          new Date() > activityDto.endRegistration;
+        activityDto.isExpired = new Date() > activityDto.endDate;
+        activityDto.isRegistered =
+          await this.userActivitiesService.isRegistered(activity.id, user.id);
+
+        return activityDto;
+      }),
+    );
+
+    return activityDtos;
   }
 
   async getActivity(id: string) {
@@ -33,10 +51,6 @@ export class ActivitiesService {
 
     if (!activity) {
       throw new BadRequestException('Activity not found');
-    }
-
-    if (activity.isExternal) {
-      throw new BadRequestException('Activity is external');
     }
 
     const activityDto = plainToInstance(ActivityDto, activity);
@@ -75,11 +89,15 @@ export class ActivitiesService {
     createExternalActivityDto: CreateExternalActivityDto,
     user: User,
   ) {
+    console.log('createExternalActivity', user);
+
     const activity = this.activityRepository.create({
       ...createExternalActivityDto,
       createdId: user.id,
       isExternal: true,
     });
+
+    console.log(activity);
 
     return this.activityRepository.save(activity);
   }

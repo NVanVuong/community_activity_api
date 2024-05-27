@@ -16,4 +16,5 @@ export class ActivityDto extends Activity {
   isExternal: boolean;
   isRegistrationExpired: boolean;
   isExpired: boolean;
+  isRegistered: boolean;
 }

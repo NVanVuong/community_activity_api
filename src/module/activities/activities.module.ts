@@ -14,5 +14,6 @@ import { UserActivitiesModule } from '../user-activities/user-activities.module'
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],
+  exports: [ActivitiesService],
 })
 export class ActivitiesModule {}

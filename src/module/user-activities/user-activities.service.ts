@@ -12,14 +12,22 @@ export class UserActivitiesService {
     private userActivityRepository: Repository<UserActivity>,
   ) {}
 
-  async getUserActivities(id: string) {
+  async getMyActivities(id: string) {
     return this.userActivityRepository.find({
       where: { user: { id } },
     });
   }
 
   async getUserActivity(id: string) {
-    return this.userActivityRepository.findOne({ where: { id } });
+    const userActivity = await this.userActivityRepository.findOne({
+      where: { id },
+    });
+
+    if (!userActivity) {
+      throw new BadRequestException('User activity not found');
+    }
+
+    return userActivity;
   }
 
   async getParticipants(activityId: string, manager?: EntityManager) {
@@ -35,6 +43,39 @@ export class UserActivitiesService {
     });
 
     return participants;
+  }
+
+  async changeStatusUserActivity(
+    userActivity: UserActivity,
+    status: UserActivityStatusEnum,
+  ) {
+    userActivity.status = status;
+
+    return this.userActivityRepository.save(userActivity);
+  }
+
+  async isRegistered(activityId: string, userId: string) {
+    const userActivity = await this.userActivityRepository.findOne({
+      where: { user: { id: userId }, activity: { id: activityId } },
+    });
+
+    return userActivity.status === UserActivityStatusEnum.Registered;
+  }
+
+  async createUserActivityForExternalActivity(
+    userActivityDto: UserActivityDto,
+  ) {
+    console.log(userActivityDto);
+
+    const { user, activity } = userActivityDto;
+
+    const newUserActivity = this.userActivityRepository.create({
+      user,
+      activity,
+      status: UserActivityStatusEnum.SubmittedProof,
+    });
+
+    return this.userActivityRepository.save(newUserActivity);
   }
 
   async registerUserActivity(

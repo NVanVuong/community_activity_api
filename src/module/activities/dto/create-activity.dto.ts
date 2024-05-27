@@ -33,7 +33,5 @@ export class CreateExternalActivityDto {
 
   score: number;
 
-  address: string;
-
   subcategoryId: string;
 }
