@@ -32,6 +32,14 @@ export class UsersController {
     return await this.usersService.getUser(id);
   }
 
+  @Get('myprofile')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('User retrieved successfully')
+  async getMyProfile(@CurrentUser() user: User) {
+    return user;
+  }
+
   @Get('clazz/:id')
   @UseGuards(AuthGuard('jwt'))
   @Roles(RoleEnum.CLASS)

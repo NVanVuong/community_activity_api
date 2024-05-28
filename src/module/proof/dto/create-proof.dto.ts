@@ -6,9 +6,17 @@ export class CreateProofDto {
 
   @IsOptional()
   image: string;
-  date: Date;
 
   // Case create proof for external activity
+  @IsOptional()
+  startDate: Date;
+
+  @IsOptional()
+  endDate: Date;
+
+  @IsOptional()
+  address: string;
+
   @IsOptional()
   score: number;
 

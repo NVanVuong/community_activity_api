@@ -45,39 +45,6 @@ export class UserActivitiesService {
     return participants;
   }
 
-  async changeStatusUserActivity(
-    userActivity: UserActivity,
-    status: UserActivityStatusEnum,
-  ) {
-    userActivity.status = status;
-
-    return this.userActivityRepository.save(userActivity);
-  }
-
-  async isRegistered(activityId: string, userId: string) {
-    const userActivity = await this.userActivityRepository.findOne({
-      where: { user: { id: userId }, activity: { id: activityId } },
-    });
-
-    return userActivity.status === UserActivityStatusEnum.Registered;
-  }
-
-  async createUserActivityForExternalActivity(
-    userActivityDto: UserActivityDto,
-  ) {
-    console.log(userActivityDto);
-
-    const { user, activity } = userActivityDto;
-
-    const newUserActivity = this.userActivityRepository.create({
-      user,
-      activity,
-      status: UserActivityStatusEnum.SubmittedProof,
-    });
-
-    return this.userActivityRepository.save(newUserActivity);
-  }
-
   async registerUserActivity(
     userActivityDto: UserActivityDto,
     manager: EntityManager,

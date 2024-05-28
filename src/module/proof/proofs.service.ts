@@ -4,18 +4,16 @@ import { RoleEnum } from 'src/common/enum/role.enum';
 import { Proof } from 'src/entity/proof.entity';
 import { Repository } from 'typeorm';
 import { CreateProofDto } from './dto/create-proof.dto';
-import { UserActivitiesService } from '../user-activities/user-activities.service';
 import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
-import { ActivitiesService } from '../activities/activities.service';
 import { User } from 'src/entity/user.entity';
+import { UserActivity } from 'src/entity/user-activity.entity';
+import { Activity } from 'src/entity/activity.entity';
 
 @Injectable()
 export class ProofsService {
   constructor(
     @InjectRepository(Proof)
     private proofsRepository: Repository<Proof>,
-    private userActivitiesService: UserActivitiesService,
-    private activitiesService: ActivitiesService,
   ) {}
 
   async getProofs() {
@@ -32,7 +30,7 @@ export class ProofsService {
     return proof;
   }
 
-  async getProofByUserActivityId(userActivityId: string) {
+  async getProofByUserActivity(userActivityId: string) {
     const proofs = this.proofsRepository.findOne({
       where: { userActivity: { id: userActivityId } },
     });
@@ -71,19 +69,26 @@ export class ProofsService {
   }
 
   async submitProof(userActivityId: string, createProofDto: CreateProofDto) {
-    const userActivity =
-      await this.userActivitiesService.getUserActivity(userActivityId);
+    await this.proofsRepository.manager.transaction(
+      async (transactionManager) => {
+        const userActivity = await transactionManager.findOne(UserActivity, {
+          where: { id: userActivityId },
+        });
 
-    const proof = this.proofsRepository.create({
-      ...createProofDto,
-      userActivity,
-    });
+        if (!userActivity) {
+          throw new Error('User activity not found');
+        }
 
-    await this.proofsRepository.save(proof);
+        const proof = transactionManager.create(Proof, {
+          ...createProofDto,
+          userActivity,
+        });
 
-    await this.userActivitiesService.changeStatusUserActivity(
-      userActivity,
-      UserActivityStatusEnum.SubmittedProof,
+        userActivity.status = UserActivityStatusEnum.SubmittedProof;
+
+        await transactionManager.save(UserActivity, userActivity);
+        return await transactionManager.save(Proof, proof);
+      },
     );
   }
 
@@ -91,26 +96,101 @@ export class ProofsService {
     createProofDto: CreateProofDto,
     user: User,
   ) {
-    console.log(user);
-
     await this.proofsRepository.manager.transaction(async (manager) => {
-      const activity = await this.activitiesService.createExternalActivity(
-        createProofDto,
-        user,
-      );
+      const activity = manager.create(Activity, {
+        ...createProofDto,
+        createdId: user.id,
+        isExternal: true,
+      });
 
-      const userActivity =
-        await this.userActivitiesService.createUserActivityForExternalActivity({
-          user,
-          activity,
-        });
+      await manager.save(Activity, activity);
+
+      const userActivity = manager.create(UserActivity, {
+        user,
+        activity,
+        status: UserActivityStatusEnum.SubmittedProof,
+      });
+
+      await manager.save(UserActivity, userActivity);
 
       const proof = manager.create(Proof, {
         ...createProofDto,
         userActivity,
       });
 
-      await manager.save(Proof, proof);
+      return await manager.save(Proof, proof);
+    });
+  }
+
+  async approveProof(id: string) {
+    await this.proofsRepository.manager.transaction(async (manager) => {
+      const proof = await manager.findOne(Proof, {
+        where: { id },
+        relations: ['userActivity', 'userActivity.user'],
+      });
+
+      console.log(proof);
+
+      if (proof.userActivity.status !== UserActivityStatusEnum.SubmittedProof) {
+        throw new BadRequestException('Proof is not submitted');
+      }
+
+      proof.userActivity.status = UserActivityStatusEnum.Approved;
+      await manager.save(UserActivity, proof.userActivity);
+
+      proof.userActivity.user.score += proof.userActivity.activity.score;
+      await manager.save(User, proof.userActivity.user);
+
+      return await manager.save(Proof, proof);
+    });
+  }
+
+  async rejectProof(id: string, comment: string) {
+    await this.proofsRepository.manager.transaction(async (manager) => {
+      const proof = await this.getProof(id);
+
+      if (proof.userActivity.status !== UserActivityStatusEnum.SubmittedProof) {
+        throw new BadRequestException('Proof is not submitted');
+      }
+
+      proof.userActivity.status = UserActivityStatusEnum.Rejected;
+      proof.comment = comment;
+
+      await manager.save(UserActivity, proof.userActivity);
+
+      return await manager.save(Proof, proof);
+    });
+  }
+
+  async resubmitProof(id: string, createProofDto: CreateProofDto) {
+    await this.proofsRepository.manager.transaction(async (manager) => {
+      const proof = await this.getProof(id);
+
+      if (proof.userActivity.status !== UserActivityStatusEnum.Rejected) {
+        throw new BadRequestException('Proof is not rejected');
+      }
+
+      proof.userActivity.status = UserActivityStatusEnum.SubmittedProof;
+
+      Object.assign(proof, createProofDto);
+
+      await manager.save(UserActivity, proof.userActivity);
+      return await manager.save(Proof, proof);
+    });
+  }
+
+  async deleteProof(id: string) {
+    await this.proofsRepository.manager.transaction(async (manager) => {
+      const proof = await this.getProof(id);
+
+      if (proof.userActivity.status === UserActivityStatusEnum.Approved) {
+        throw new BadRequestException('Proof is already approved');
+      }
+
+      proof.userActivity.status = UserActivityStatusEnum.Registered;
+
+      await manager.save(UserActivity, proof.userActivity);
+      return await manager.remove(Proof, proof);
     });
   }
 }

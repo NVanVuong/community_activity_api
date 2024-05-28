@@ -22,12 +22,11 @@ export class Proof {
   image: string;
 
   @Column({ nullable: true })
-  date: Date;
-
-  @Column({ nullable: true })
   comment: string;
 
-  @OneToOne(() => UserActivity, (userActivity) => userActivity.proof)
+  @OneToOne(() => UserActivity, (userActivity) => userActivity.proof, {
+    eager: true,
+  })
   @JoinColumn()
   userActivity: UserActivity;
 }
