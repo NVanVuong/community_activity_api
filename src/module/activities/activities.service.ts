@@ -2,16 +2,15 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Activity } from 'src/entity/activity.entity';
 import { Repository } from 'typeorm';
-import {
-  CreateActivityDto,
-  CreateExternalActivityDto,
-} from './dto/create-activity.dto';
+import { CreateActivityDto } from './dto/create-activity.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { User } from 'src/entity/user.entity';
 import { plainToInstance } from 'class-transformer';
 import { ActivityDto } from './dto/activity.dto';
 import { UserActivitiesService } from '../user-activities/user-activities.service';
 import { ActivityActionEnum } from 'src/common/enum/action.enum';
+import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
+import { RoleEnum } from 'src/common/enum/role.enum';
 
 @Injectable()
 export class ActivitiesService {
@@ -22,8 +21,31 @@ export class ActivitiesService {
     private userActivitiesService: UserActivitiesService,
   ) {}
 
-  async getActivities() {
-    return this.activityRepository.find();
+  async getActivities(user: User) {
+    const activities = await this.activityRepository.find({
+      where: { isExternal: false },
+      relations: ['userActivities', 'userActivities.user'],
+    });
+
+    const currentDate = new Date();
+    const activityDtos = activities.map((activity) => {
+      const activityDto = plainToInstance(ActivityDto, activity);
+
+      activityDto.isRegistrationExpired =
+        currentDate > activity.endRegistration;
+      activityDto.isExpired = currentDate > activity.endDate;
+      if (user.role === RoleEnum.USER) {
+        activityDto.isRegistered = activity.userActivities.some(
+          (ua) =>
+            ua.user.id === user.id &&
+            ua.status !== UserActivityStatusEnum.Canceled,
+        );
+      }
+
+      return activityDto;
+    });
+
+    return activityDtos;
   }
 
   async getActivity(id: string) {
@@ -35,16 +57,12 @@ export class ActivitiesService {
       throw new BadRequestException('Activity not found');
     }
 
-    if (activity.isExternal) {
-      throw new BadRequestException('Activity is external');
-    }
-
     const activityDto = plainToInstance(ActivityDto, activity);
 
-    activityDto.isRegistrationExpired =
-      new Date() > activityDto.endRegistration;
+    const date = new Date();
+    activityDto.isRegistrationExpired = date > activityDto.endRegistration;
 
-    activityDto.isExpired = new Date() > activityDto.endDate;
+    activityDto.isExpired = date > activityDto.endDate;
 
     return activityDto;
   }
@@ -67,19 +85,6 @@ export class ActivitiesService {
     });
 
     activity.subcategory = subcategory;
-
-    return this.activityRepository.save(activity);
-  }
-
-  async createExternalActivity(
-    createExternalActivityDto: CreateExternalActivityDto,
-    user: User,
-  ) {
-    const activity = this.activityRepository.create({
-      ...createExternalActivityDto,
-      createdId: user.id,
-      isExternal: true,
-    });
 
     return this.activityRepository.save(activity);
   }

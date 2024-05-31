@@ -1,4 +1,10 @@
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { UserActivity } from './user-activity.entity';
 
 @Entity()
@@ -15,6 +21,12 @@ export class Proof {
   @Column({ nullable: true })
   image: string;
 
-  @OneToOne(() => UserActivity, (userActivity) => userActivity.proof)
+  @Column({ nullable: true })
+  comment: string;
+
+  @OneToOne(() => UserActivity, (userActivity) => userActivity.proof, {
+    eager: true,
+  })
+  @JoinColumn()
   userActivity: UserActivity;
 }

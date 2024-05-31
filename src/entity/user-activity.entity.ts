@@ -22,7 +22,7 @@ export class UserActivity {
   user: User;
 
   @ManyToOne(() => Activity, (activity) => activity.userActivities, {
-    nullable: true,
+    eager: true,
   })
   activity: Activity;
 

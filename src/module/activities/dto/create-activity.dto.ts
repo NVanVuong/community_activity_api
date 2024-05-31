@@ -31,9 +31,11 @@ export class CreateActivityDto {
 export class CreateExternalActivityDto {
   name: string;
 
-  score: number;
+  startDate: Date;
 
-  address: string;
+  endDate: Date;
+
+  score: number;
 
   subcategoryId: string;
 }
