@@ -21,19 +21,8 @@ export class ClazzesController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Classes retrieved successfully')
-  getClazzes(
-    @Query('academicYearId') academicYearId: string,
-    @Query('facultyId') facultyId: string,
-  ) {
-    if (academicYearId) {
-      return this.clazzesService.getClazzesByAcademicYear(academicYearId);
-    }
-
-    if (facultyId) {
-      return this.clazzesService.getClazzesByFaculty(facultyId);
-    }
-
-    return this.clazzesService.getClazzes();
+  getClazzes(@Query('keyword') keyword: string) {
+    return this.clazzesService.getClazzes(keyword);
   }
 
   @Get(':id')

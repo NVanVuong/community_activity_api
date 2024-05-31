@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Clazz } from 'src/entity/clazz.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { ClazzDto } from './dto/clazz.dto';
 
 @Injectable()
@@ -11,8 +11,12 @@ export class ClazzesService {
     private readonly clazzRepository: Repository<Clazz>,
   ) {}
 
-  async getClazzes() {
-    return await this.clazzRepository.find();
+  async getClazzes(keyword: string) {
+    return await this.clazzRepository.find({
+      where: [{ name: ILike(`%${keyword}%`) }],
+      relations: ['faculty', 'academicYear'],
+      order: { name: 'ASC' },
+    });
   }
 
   async getClazz(id: string) {

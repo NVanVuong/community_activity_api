@@ -15,9 +15,6 @@ export class Proof {
   @Column({ nullable: true })
   image: string;
 
-  @Column({ nullable: true })
-  date: Date;
-
   @OneToOne(() => UserActivity, (userActivity) => userActivity.proof)
   userActivity: UserActivity;
 }

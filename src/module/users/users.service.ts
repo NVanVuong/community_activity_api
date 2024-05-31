@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entity/user.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ClazzesService } from '../clazzes/clazzes.service';
@@ -117,8 +117,11 @@ export class UsersService {
     return user;
   }
 
-  async getAllUsers() {
-    return await this.usersRepository.find();
+  async getUsers(keyword: string) {
+    return await this.usersRepository.find({
+      where: [{ name: ILike(`%${keyword}%`), role: RoleEnum.USER }],
+      take: 100,
+    });
   }
 
   async getUsersByClazz(clazzId: string, user: User) {

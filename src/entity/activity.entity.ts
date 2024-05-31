@@ -23,11 +23,11 @@ export class Activity extends Base {
   @Column({ default: 0 })
   participants: number;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
   @Column({ nullable: true })
-  orangizer: string;
+  organizer: string;
 
   @Column({ nullable: true })
   startDate: Date;

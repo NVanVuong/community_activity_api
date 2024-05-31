@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -45,8 +46,8 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.OK)
   @ResponseMessage('Users retrieved successfully')
-  async getAllUsers() {
-    return await this.usersService.getAllUsers();
+  async getUsers(@Query('keyword') keyword: string): Promise<User[]> {
+    return this.usersService.getUsers(keyword);
   }
 
   @Post()
