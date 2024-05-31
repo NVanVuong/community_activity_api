@@ -22,8 +22,8 @@ export class ActivitiesController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Activities retrieved successfully')
-  getActivities() {
-    return this.activitiesService.getActivities();
+  getActivities(@CurrentUser() user: User) {
+    return this.activitiesService.getActivities(user);
   }
 
   @Get(':id')
@@ -40,7 +40,6 @@ export class ActivitiesController {
     @Body() createActivityDto: CreateActivityDto,
     @CurrentUser() user: User,
   ) {
-    console.log(user);
     return this.activitiesService.createActivity(createActivityDto, user);
   }
 

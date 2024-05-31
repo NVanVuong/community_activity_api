@@ -18,14 +18,11 @@ export class UserActivity {
   @Column({ default: UserActivityStatusEnum.Registered })
   status: UserActivityStatusEnum;
 
-  @Column({ default: false })
-  isExternal: boolean;
-
   @ManyToOne(() => User, (user) => user.userActivities)
   user: User;
 
   @ManyToOne(() => Activity, (activity) => activity.userActivities, {
-    nullable: true,
+    eager: true,
   })
   activity: Activity;
 

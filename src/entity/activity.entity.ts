@@ -2,6 +2,7 @@ import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { Base } from './base.entity';
 import { Subcategory } from './subcategory.entity';
 import { UserActivity } from './user-activity.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class Activity extends Base {
@@ -23,11 +24,11 @@ export class Activity extends Base {
   @Column({ default: 0 })
   participants: number;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
   @Column({ nullable: true })
-  orangizer: string;
+  organizer: string;
 
   @Column({ nullable: true })
   startDate: Date;
@@ -48,5 +49,6 @@ export class Activity extends Base {
   subcategory: Subcategory;
 
   @OneToMany(() => UserActivity, (userActivity) => userActivity.activity)
+  @Exclude()
   userActivities: UserActivity[];
 }
