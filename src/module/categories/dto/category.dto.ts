@@ -7,5 +7,5 @@ export class SubcategoryDto {
   name: string;
   minScore: number;
   maxScore: number;
-  categoryIndex: number;
+  categoryIndex?: number;
 }

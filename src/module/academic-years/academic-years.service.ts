@@ -20,7 +20,13 @@ export class AcademicYearsService {
   }
 
   async getAcademicYear(id: string) {
-    return await this.academicYearsRepository.findOne({ where: { id } });
+    const academicYear = await this.academicYearsRepository.findOne({
+      where: { id },
+    });
+    if (!academicYear) {
+      throw new NotFoundException('Academic year not found');
+    }
+    return academicYear;
   }
 
   async getAcademicYearByStartYear(startYear: number) {

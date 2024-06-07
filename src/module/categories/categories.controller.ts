@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CategoryDto, SubcategoryDto } from './dto/category.dto';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
@@ -37,6 +45,21 @@ export class CategoriesController {
     return await this.categoriesService.createCategory(categoryDto);
   }
 
+  @Put(':categoryId')
+  @ResponseMessage('Category updated successfully')
+  async updateCategory(
+    @Param('categoryId') id: string,
+    @Body() categoryDto: CategoryDto,
+  ) {
+    return await this.categoriesService.updateCategory(id, categoryDto);
+  }
+
+  @Delete(':categoryId')
+  @ResponseMessage('Category deleted successfully')
+  async deleteCategory(@Param('categoryId') id: string) {
+    return await this.categoriesService.deleteCategory(id);
+  }
+
   @Post('bulk')
   @ResponseMessage('Categories created successfully')
   async createCategories(@Body() categories: CategoryDto[]) {
@@ -53,5 +76,20 @@ export class CategoriesController {
   @ResponseMessage('Subcategories created successfully')
   async createSubcategories(@Body() subcategories: SubcategoryDto[]) {
     return await this.categoriesService.createSubcategories(subcategories);
+  }
+
+  @Put('subcategories/:subcategoryId')
+  @ResponseMessage('Subcategory updated successfully')
+  async updateSubcategory(
+    @Param('subcategoryId') id: string,
+    @Body() subcategoryDto: SubcategoryDto,
+  ) {
+    return await this.categoriesService.updateSubcategory(id, subcategoryDto);
+  }
+
+  @Delete('subcategories/:subcategoryId')
+  @ResponseMessage('Subcategory deleted successfully')
+  async deleteSubcategory(@Param('subcategoryId') id: string) {
+    return await this.categoriesService.deleteSubcategory(id);
   }
 }

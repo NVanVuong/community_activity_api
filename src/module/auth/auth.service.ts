@@ -34,12 +34,25 @@ export class AuthService {
     }
 
     const payload: JwtPayload = {
-      username,
       id: user.id,
+      username: user.username,
       name: user.name,
+      avatar: user.avatar,
       role: user.role,
     };
 
     return { accessToken: await this.jwtService.sign(payload) };
+  }
+
+  async generateAccessToken(user: User) {
+    const payload: JwtPayload = {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      avatar: user.avatar,
+      role: user.role,
+    };
+
+    return await this.jwtService.sign(payload);
   }
 }

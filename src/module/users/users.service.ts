@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entity/user.entity';
 import { ILike, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto, UpdateUserDto } from './dto/update-user.dto';
 import { ClazzesService } from '../clazzes/clazzes.service';
 import { plainToInstance } from 'class-transformer';
 import { UserStudentDto } from './dto/user.dto';
@@ -16,6 +16,9 @@ import { FacultiesService } from '../faculties/faculties.service';
 import { RoleEnum } from 'src/common/enum/role.enum';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { AuthService } from '../auth/auth.service';
+import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
 
 @Injectable()
 export class UsersService {
@@ -24,9 +27,11 @@ export class UsersService {
     private usersRepository: Repository<User>,
     private clazzesService: ClazzesService,
     private facultiesService: FacultiesService,
+    private cloudinaryService: CloudinaryService,
+    private authService: AuthService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto, file: Express.Multer.File) {
     try {
       const { studentId, clazzId, facultyId, role } = createUserDto;
 
@@ -69,6 +74,11 @@ export class UsersService {
           break;
       }
 
+      if (file) {
+        const avatarUrl = await this.cloudinaryService.uploadImage(file);
+        user.avatar = avatarUrl;
+      }
+
       const salt = await bcrypt.genSalt();
       const hashPassword = await bcrypt.hash(DEFAULT_PASSWORD, salt);
       user.password = hashPassword;
@@ -98,6 +108,64 @@ export class UsersService {
     }
   }
 
+  async getMyInfo(id: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['userActivities'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const totalUserActivities = user.userActivities.filter(
+      (activity) => activity.status !== UserActivityStatusEnum.Canceled,
+    ).length;
+
+    delete user.userActivities;
+
+    return {
+      user,
+      totalUserActivities,
+    };
+  }
+
+  async updateMyInfo(
+    user: User,
+    updateUserDto: UpdateUserDto,
+    file?: Express.Multer.File,
+  ) {
+    if (file) {
+      const avatarUrl = await this.cloudinaryService.uploadImage(file);
+      user.avatar = avatarUrl;
+    }
+
+    Object.assign(user, updateUserDto);
+
+    try {
+      const newUser = await this.usersRepository.save(user);
+      const accessToken = await this.authService.generateAccessToken(newUser);
+      return { accessToken };
+    } catch (error) {
+      this.handleUserCreationError(error);
+    }
+  }
+
+  async updateMyPassword(user: User, updatePasswordDto: UpdatePasswordDto) {
+    const { oldPassword, newPassword } = updatePasswordDto;
+
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    const salt = await bcrypt.genSalt();
+    const hashPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashPassword;
+
+    return await this.usersRepository.save(user);
+  }
+
   async deleteUser(id: string) {
     const user = await this.usersRepository.findOne({ where: { id } });
 
@@ -119,18 +187,12 @@ export class UsersService {
 
   async getUsers(keyword: string) {
     return await this.usersRepository.find({
-      where: [{ name: ILike(`%${keyword}%`), role: RoleEnum.USER }],
+      where: [{ name: ILike(`%${keyword}%`) }],
       take: 100,
     });
   }
 
-  async getUsersByClazz(clazzId: string, user: User) {
-    if (clazzId !== user.clazz.id) {
-      throw new BadRequestException(
-        'You are not authorized to view this class',
-      );
-    }
-
+  async getUsersByClazz(clazzId: string) {
     const users = await this.usersRepository.find({
       where: {
         clazz: {

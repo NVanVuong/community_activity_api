@@ -39,6 +39,13 @@ export class ClazzesController {
     return this.clazzesService.getClazzByName(name);
   }
 
+  @Get('faculty/:facultyId')
+  @UseGuards(AuthGuard('jwt'))
+  @ResponseMessage('Classes retrieved successfully')
+  getClazzesByFaculty(@Param('facultyId') facultyId: string) {
+    return this.clazzesService.getClazzesByFaculty(facultyId);
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Class created successfully')

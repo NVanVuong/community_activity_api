@@ -129,8 +129,6 @@ export class ProofsService {
         relations: ['userActivity', 'userActivity.user'],
       });
 
-      console.log(proof);
-
       if (proof.userActivity.status !== UserActivityStatusEnum.SubmittedProof) {
         throw new BadRequestException('Proof is not submitted');
       }

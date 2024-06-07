@@ -5,3 +5,10 @@ export enum UserActivityStatusEnum {
   Approved = 'approved',
   Rejected = 'rejected',
 }
+
+export enum ActivityStatusEnum {
+  RegistrationOpen = 'registration_open',
+  RegistrationExpired = 'registration_expired',
+  Expired = 'expired',
+  Registered = 'registered',
+}

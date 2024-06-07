@@ -1,3 +1,4 @@
+import { CloudinaryModule } from './module/cloudinary/cloudinary.module';
 import { ProofsModule } from './module/proof/proofs.module';
 import { UserActivitiesModule } from './module/user-activities/user-activities.module';
 import { ActivitiesModule } from './module/activities/activities.module';
@@ -16,6 +17,7 @@ import { UsersModule } from './module/users/users.module';
 
 @Module({
   imports: [
+    CloudinaryModule,
     ProofsModule,
     UserActivitiesModule,
     ActivitiesModule,

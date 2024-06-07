@@ -16,7 +16,9 @@ export class CategoriesService {
   ) {}
 
   async getCategories() {
-    return await this.categoryRepository.find();
+    return await this.categoryRepository.find({
+      order: { index: 'ASC' },
+    });
   }
 
   async getCategory(id: string) {
@@ -47,16 +49,29 @@ export class CategoriesService {
     });
   }
 
-  async createCategory(categoryDto: CategoryDto) {
-    const Category = this.categoryRepository.create(categoryDto);
-    return await this.categoryRepository.save(Category);
+  async createCategory(categoryDto: CategoryDto): Promise<Category> {
+    const { index } = categoryDto;
+
+    await this.categoryRepository
+      .createQueryBuilder()
+      .update(Category)
+      .set({ index: () => '"index" + 1' })
+      .where('"index" >= :index', { index })
+      .execute();
+
+    const category = this.categoryRepository.create(categoryDto);
+    return await this.categoryRepository.save(category);
   }
 
   async createCategories(categories: CategoryDto[]) {
-    const newCategories = categories.map((category) =>
-      this.categoryRepository.create(category),
-    );
-    return await this.categoryRepository.save(newCategories);
+    const createdCategories = [];
+
+    for (const categoryDto of categories) {
+      const createdCategory = await this.createCategory(categoryDto);
+      createdCategories.push(createdCategory);
+    }
+
+    return createdCategories;
   }
 
   async createSubcategory(subcategoryDto: SubcategoryDto) {
@@ -64,6 +79,11 @@ export class CategoriesService {
     const category = await this.categoryRepository.findOne({
       where: { index: categoryIndex },
     });
+
+    if (minScore > maxScore) {
+      throw new BadRequestException('Min score must be less than max score');
+    }
+
     const newSubcategory = this.subcategoryRepository.create({
       name,
       minScore,
@@ -84,6 +104,17 @@ export class CategoriesService {
   }
 
   async deleteCategory(id: string) {
+    const category = await this.getCategory(id);
+
+    const categoryIndex = category.index;
+
+    await this.categoryRepository
+      .createQueryBuilder()
+      .update(Category)
+      .set({ index: () => '"index" - 1' })
+      .where('"index" > :index', { index: categoryIndex })
+      .execute();
+
     return await this.categoryRepository.delete(id);
   }
 
@@ -91,21 +122,57 @@ export class CategoriesService {
     return await this.subcategoryRepository.delete(id);
   }
 
-  async updateCategory(id: string, name: string) {
-    return await this.categoryRepository.update(id, { name });
+  async updateCategory(
+    id: string,
+    categoryDto: CategoryDto,
+  ): Promise<Category> {
+    const { name, index: newIndex } = categoryDto;
+
+    const category = await this.getCategory(id);
+
+    const currentIndex = category.index;
+
+    if (newIndex !== undefined && newIndex !== currentIndex) {
+      if (newIndex < currentIndex) {
+        await this.categoryRepository
+          .createQueryBuilder()
+          .update(Category)
+          .set({ index: () => '"index" + 1' })
+          .where('"index" >= :newIndex AND "index" < :currentIndex', {
+            newIndex,
+            currentIndex,
+          })
+          .execute();
+      } else {
+        await this.categoryRepository
+          .createQueryBuilder()
+          .update(Category)
+          .set({ index: () => '"index" - 1' })
+          .where('"index" > :currentIndex AND "index" <= :newIndex', {
+            newIndex,
+            currentIndex,
+          })
+          .execute();
+      }
+    }
+
+    category.name = name;
+    category.index = newIndex;
+
+    return await this.categoryRepository.save(category);
   }
 
-  async updateSubcategory(id: string, SubcategoryDto: SubcategoryDto) {
-    const { name, minScore, maxScore, categoryIndex } = SubcategoryDto;
-    const category = await this.categoryRepository.findOne({
-      where: { index: categoryIndex },
-    });
+  async updateSubcategory(id: string, subcategoryDto: SubcategoryDto) {
+    const { name, minScore, maxScore } = subcategoryDto;
+
+    if (minScore > maxScore) {
+      throw new BadRequestException('Min score must be less than max score');
+    }
 
     return await this.subcategoryRepository.update(id, {
       name,
       minScore,
       maxScore,
-      category,
     });
   }
 }

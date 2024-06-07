@@ -3,6 +3,7 @@ import { Clazz } from 'src/entity/clazz.entity';
 import { Faculty } from 'src/entity/faculty.entity';
 import { User } from 'src/entity/user.entity';
 
+export interface IUser extends User {}
 @Expose()
 export class UserDto extends User {}
 

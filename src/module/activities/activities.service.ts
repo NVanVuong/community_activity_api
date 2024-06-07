@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Activity } from 'src/entity/activity.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { User } from 'src/entity/user.entity';
@@ -9,8 +9,12 @@ import { plainToInstance } from 'class-transformer';
 import { ActivityDto } from './dto/activity.dto';
 import { UserActivitiesService } from '../user-activities/user-activities.service';
 import { ActivityActionEnum } from 'src/common/enum/action.enum';
-import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
+import {
+  ActivityStatusEnum,
+  UserActivityStatusEnum,
+} from 'src/common/enum/status.enum';
 import { RoleEnum } from 'src/common/enum/role.enum';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ActivitiesService {
@@ -19,27 +23,40 @@ export class ActivitiesService {
     private activityRepository: Repository<Activity>,
     private categoriesService: CategoriesService,
     private userActivitiesService: UserActivitiesService,
+    private cloudinaryService: CloudinaryService,
   ) {}
 
-  async getActivities(user: User) {
+  async getActivities(user: User, keyword: string) {
     const activities = await this.activityRepository.find({
-      where: { isExternal: false },
-      relations: ['userActivities', 'userActivities.user'],
+      where: [{ name: ILike(`%${keyword}%`) }],
+      relations: ['userActivities', 'userActivities.user', 'subcategory'],
+      order: { createdAt: 'DESC' },
     });
 
     const currentDate = new Date();
     const activityDtos = activities.map((activity) => {
       const activityDto = plainToInstance(ActivityDto, activity);
 
-      activityDto.isRegistrationExpired =
-        currentDate > activity.endRegistration;
-      activityDto.isExpired = currentDate > activity.endDate;
       if (user.role === RoleEnum.USER) {
-        activityDto.isRegistered = activity.userActivities.some(
+        const isRegistered = activity.userActivities.some(
           (ua) =>
             ua.user.id === user.id &&
             ua.status !== UserActivityStatusEnum.Canceled,
         );
+
+        if (isRegistered) {
+          activityDto.status = ActivityStatusEnum.Registered;
+        } else {
+          activityDto.status = ActivityStatusEnum.RegistrationOpen;
+        }
+      } else {
+        if (currentDate > activity.endDate) {
+          activityDto.status = ActivityStatusEnum.Expired;
+        } else if (currentDate > activity.endRegistration) {
+          activityDto.status = ActivityStatusEnum.RegistrationExpired;
+        } else {
+          activityDto.status = ActivityStatusEnum.RegistrationOpen;
+        }
       }
 
       return activityDto;
@@ -59,15 +76,24 @@ export class ActivitiesService {
 
     const activityDto = plainToInstance(ActivityDto, activity);
 
-    const date = new Date();
-    activityDto.isRegistrationExpired = date > activityDto.endRegistration;
+    const currentDate = new Date();
 
-    activityDto.isExpired = date > activityDto.endDate;
+    if (currentDate > activity.endDate) {
+      activityDto.status = ActivityStatusEnum.Expired;
+    } else if (currentDate > activity.endRegistration) {
+      activityDto.status = ActivityStatusEnum.RegistrationExpired;
+    } else {
+      activityDto.status = ActivityStatusEnum.RegistrationOpen;
+    }
 
     return activityDto;
   }
 
-  async createActivity(createActivityDto: CreateActivityDto, user: User) {
+  async createActivity(
+    createActivityDto: CreateActivityDto,
+    user: User,
+    file?: Express.Multer.File,
+  ) {
     const { score, subcategoryId } = createActivityDto;
 
     const subcategory =
@@ -86,6 +112,11 @@ export class ActivitiesService {
 
     activity.subcategory = subcategory;
 
+    if (file) {
+      const imageUrl = await this.cloudinaryService.uploadImage(file);
+      activity.image = imageUrl;
+    }
+
     return this.activityRepository.save(activity);
   }
 
@@ -93,6 +124,7 @@ export class ActivitiesService {
     id: string,
     createActivityDto: CreateActivityDto,
     user: User,
+    file?: Express.Multer.File,
   ) {
     const { score, subcategoryId } = createActivityDto;
 
@@ -105,6 +137,11 @@ export class ActivitiesService {
       throw new BadRequestException(
         `Score must be between ${subcategory.minScore} and ${subcategory.maxScore} of the subcategory ${subcategory.name}`,
       );
+    }
+
+    if (file) {
+      const imageUrl = await this.cloudinaryService.uploadImage(file);
+      activity.image = imageUrl;
     }
 
     Object.assign(
@@ -180,11 +217,11 @@ export class ActivitiesService {
       throw new BadRequestException('Activity participants is full');
     }
 
-    if (activityDto.isExpired) {
+    if (activityDto.status === ActivityStatusEnum.Expired) {
       throw new BadRequestException('Activity is expired');
     }
 
-    if (activityDto.isRegistrationExpired) {
+    if (activityDto.status === ActivityStatusEnum.RegistrationExpired) {
       throw new BadRequestException('Activity registration is expired');
     }
   }

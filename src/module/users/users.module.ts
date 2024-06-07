@@ -8,6 +8,7 @@ import { FacultiesModule } from '../faculties/faculties.module';
 import { ClazzesModule } from '../clazzes/clazzes.module';
 import { RolesModule } from '../roles/roles.module';
 import { UserActivitiesModule } from '../user-activities/user-activities.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserActivitiesModule } from '../user-activities/user-activities.module'
     ClazzesModule,
     RolesModule,
     UserActivitiesModule,
+    CloudinaryModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

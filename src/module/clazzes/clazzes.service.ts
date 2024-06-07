@@ -1,21 +1,30 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Clazz } from 'src/entity/clazz.entity';
 import { ILike, Repository } from 'typeorm';
 import { ClazzDto } from './dto/clazz.dto';
+import { FacultiesService } from '../faculties/faculties.service';
+import { AcademicYearsService } from '../academic-years/academic-years.service';
 
 @Injectable()
 export class ClazzesService {
   constructor(
     @InjectRepository(Clazz)
     private readonly clazzRepository: Repository<Clazz>,
+    private readonly facultiesService: FacultiesService,
+    private readonly academicYearsService: AcademicYearsService,
   ) {}
 
   async getClazzes(keyword: string) {
     return await this.clazzRepository.find({
       where: [{ name: ILike(`%${keyword}%`) }],
       relations: ['faculty', 'academicYear'],
-      order: { name: 'ASC' },
+      order: { faculty: { name: 'ASC' } },
     });
   }
 
@@ -36,15 +45,29 @@ export class ClazzesService {
   async getClazzesByFaculty(facultyId: string) {
     return await this.clazzRepository.find({
       where: { faculty: { id: facultyId } },
+      relations: ['academicYear'],
     });
   }
 
   async createClazz(clazzDto: ClazzDto) {
     try {
-      return await this.clazzRepository.save(clazzDto);
+      const clazz = await this.clazzRepository.create(clazzDto);
+
+      const faculty = await this.facultiesService.getFaculty(
+        clazzDto.facultyId,
+      );
+      clazz.faculty = faculty;
+
+      const academicYear = await this.academicYearsService.getAcademicYear(
+        clazzDto.academicYearId,
+      );
+
+      clazz.academicYear = academicYear;
+
+      return await this.clazzRepository.save(clazz);
     } catch (error) {
       if (error.code === '23505') {
-        throw new Error('Class already exists');
+        throw new BadRequestException('Class already exists');
       } else throw new InternalServerErrorException();
     }
   }
@@ -59,7 +82,7 @@ export class ClazzesService {
     const clazz = await this.clazzRepository.findOne({ where: { id } });
 
     if (!clazz) {
-      throw new Error('Class not found');
+      throw new NotFoundException('Class not found');
     }
 
     Object.assign(clazz, clazzDto);
@@ -71,7 +94,7 @@ export class ClazzesService {
     const clazz = await this.clazzRepository.findOne({ where: { id } });
 
     if (!clazz) {
-      throw new Error('Class not found');
+      throw new NotFoundException('Class not found');
     }
 
     return await this.clazzRepository.remove(clazz);

@@ -1,4 +1,6 @@
+import { ActivityStatusEnum } from 'src/common/enum/status.enum';
 import { Activity } from 'src/entity/activity.entity';
+import { Subcategory } from 'src/entity/subcategory.entity';
 
 export class ActivityDto extends Activity {
   name: string;
@@ -12,9 +14,7 @@ export class ActivityDto extends Activity {
   endDate: Date;
   startRegistration: Date;
   endRegistration: Date;
-  subcategoryId: string;
+  subcategory: Subcategory;
   isExternal: boolean;
-  isRegistrationExpired: boolean;
-  isExpired: boolean;
-  isRegistered: boolean;
+  status: ActivityStatusEnum;
 }
