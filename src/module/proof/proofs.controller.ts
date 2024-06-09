@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ProofsService } from './proofs.service';
@@ -21,15 +22,15 @@ export class ProofsController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proofs retrieved successfully')
-  getProofs() {
-    return this.proofsService.getProofs();
+  async getProofs(@Query('keyword') keyword: string = '') {
+    return this.proofsService.getProofs(keyword);
   }
 
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof retrieved successfully')
-  getProof() {
-    return this.proofsService.getProofs();
+  getProof(@Param('id') id: string) {
+    return this.proofsService.getProof(id);
   }
 
   @Get('user-activity/:userActivityId')
@@ -83,21 +84,21 @@ export class ProofsController {
     );
   }
 
-  @Post('approve/:id')
+  @Post(':id/approve')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof approved successfully')
   approveProof(@Param('id') id: string) {
     return this.proofsService.approveProof(id);
   }
 
-  @Post('reject/:id')
+  @Post(':id/reject')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof rejected successfully')
   rejectProof(@Param('id') id: string, @Body() comment: string) {
     return this.proofsService.rejectProof(id, comment);
   }
 
-  @Post('resubmit/:id')
+  @Post(':id/resubmit')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof resubmitted successfully')
   resubmitProof(

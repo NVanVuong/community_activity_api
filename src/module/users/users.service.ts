@@ -31,7 +31,7 @@ export class UsersService {
     private authService: AuthService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto, file: Express.Multer.File) {
+  async createUser(createUserDto: CreateUserDto) {
     try {
       const { studentId, clazzId, facultyId, role } = createUserDto;
 
@@ -40,43 +40,19 @@ export class UsersService {
 
       switch (role) {
         case RoleEnum.USER:
-          if (!clazzId || !studentId) {
-            throw new BadRequestException('ClassID and StudentID are required');
-          }
-          const clazzForUser = await this.clazzesService.getClazz(clazzId);
-          user.username = studentId;
-          user.clazz = clazzForUser;
-          user.id = studentId;
+          await this.handleUserRole(user, studentId, clazzId);
           break;
 
         case RoleEnum.CLASS:
-          if (!clazzId) throw new BadRequestException('ClassID is required');
-
-          const clazzForClass = await this.clazzesService.getClazz(clazzId);
-          user.username = clazzForClass.name.toLowerCase();
-          user.name = clazzForClass.name;
-          user.clazz = clazzForClass;
-          user.id = clazzForClass.id;
+          await this.handleClassRole(user, clazzId);
           break;
 
         case RoleEnum.FACULTY:
-          if (!facultyId)
-            throw new BadRequestException('FacultyID is required');
-
-          const faculty = await this.facultiesService.getFaculty(facultyId);
-          user.username = faculty.code.toLowerCase();
-          user.name = faculty.name;
-          user.faculty = faculty;
-          user.id = faculty.id;
+          await this.handleFacultyRole(user, facultyId);
           break;
 
         default:
-          break;
-      }
-
-      if (file) {
-        const avatarUrl = await this.cloudinaryService.uploadImage(file);
-        user.avatar = avatarUrl;
+          throw new BadRequestException('Invalid role');
       }
 
       const salt = await bcrypt.genSalt();
@@ -90,6 +66,57 @@ export class UsersService {
     } catch (error) {
       this.handleUserCreationError(error);
     }
+  }
+
+  async handleUserRole(user: User, studentId: string, clazzId: string) {
+    if (!clazzId || !studentId) {
+      throw new BadRequestException('ClassID and StudentID are required');
+    }
+
+    const clazzForUser = await this.clazzesService.getClazz(clazzId);
+    user.username = studentId;
+    user.clazz = clazzForUser;
+    user.id = studentId;
+  }
+
+  async handleClassRole(user: User, clazzId: string) {
+    if (!clazzId) {
+      throw new BadRequestException('ClassID is required');
+    }
+
+    const classAccount = await this.usersRepository.findOne({
+      where: { id: clazzId, role: RoleEnum.CLASS },
+    });
+
+    if (classAccount) {
+      throw new BadRequestException('Account of class already exists');
+    }
+
+    const clazzForClass = await this.clazzesService.getClazz(clazzId);
+    user.username = clazzForClass.name.toLowerCase();
+    user.name = clazzForClass.name;
+    user.clazz = clazzForClass;
+    user.id = clazzForClass.id;
+  }
+
+  async handleFacultyRole(user: User, facultyId: string) {
+    if (!facultyId) {
+      throw new BadRequestException('FacultyID is required');
+    }
+
+    const facultyAccount = await this.usersRepository.findOne({
+      where: { id: facultyId, role: RoleEnum.FACULTY },
+    });
+
+    if (facultyAccount) {
+      throw new BadRequestException('Account of faculty already exists');
+    }
+
+    const faculty = await this.facultiesService.getFaculty(facultyId);
+    user.username = faculty.code.toLowerCase();
+    user.name = faculty.name;
+    user.faculty = faculty;
+    user.id = faculty.id;
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
@@ -173,7 +200,8 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    await this.usersRepository.remove(user);
+    user.deletedAt = new Date();
+    await this.usersRepository.save(user);
   }
 
   async getUser(id: string) {
@@ -185,11 +213,44 @@ export class UsersService {
     return user;
   }
 
-  async getUsers(keyword: string) {
-    return await this.usersRepository.find({
-      where: [{ name: ILike(`%${keyword}%`) }],
-      take: 100,
+  async getUsers(
+    keyword: string,
+    clazzId: string,
+    facultyId: string,
+    yearId: string,
+    page: number,
+    limit: number,
+  ) {
+    const where: any = {
+      deletedAt: null,
+    };
+
+    if (keyword) {
+      where.name = ILike(`%${keyword}%`);
+    }
+    if (clazzId) {
+      where.clazz = { id: clazzId };
+    }
+    if (facultyId) {
+      where.clazz = { ...where.clazz, faculty: { id: facultyId } };
+    }
+    if (yearId) {
+      where.clazz = { ...where.clazz, academicYear: { id: yearId } };
+    }
+
+    const [users, total] = await this.usersRepository.findAndCount({
+      relations: ['clazz.academicYear'],
+      where,
+      take: limit,
+      skip: (page - 1) * limit,
     });
+
+    return {
+      users,
+      total,
+      page,
+      limit,
+    };
   }
 
   async getUsersByClazz(clazzId: string) {

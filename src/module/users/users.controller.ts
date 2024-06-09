@@ -3,8 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   Put,
@@ -20,8 +18,6 @@ import { UpdatePasswordDto, UpdateUserDto } from './dto/update-user.dto';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
 import { CurrentUser } from 'src/decorator/current-user.decorator';
 import { User } from 'src/entity/user.entity';
-import { Roles } from 'src/decorator/roles.decorator';
-import { RoleEnum } from 'src/common/enum/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('users')
@@ -30,7 +26,6 @@ export class UsersController {
 
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('User retrieved successfully')
   async getUser(@Param('id') id: string) {
     return await this.usersService.getUser(id);
@@ -38,8 +33,6 @@ export class UsersController {
 
   @Get('class/:id')
   @UseGuards(AuthGuard('jwt'))
-  @Roles(RoleEnum.CLASS)
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Users retrieved successfully')
   async getUsersByClazz(@Param('id') id: string) {
     return await this.usersService.getUsersByClazz(id);
@@ -47,27 +40,34 @@ export class UsersController {
 
   @Get()
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Users retrieved successfully')
-  async getUsers(@Query('keyword') keyword: string): Promise<User[]> {
-    return this.usersService.getUsers(keyword);
+  async getUsers(
+    @Query('keyword') keyword: string,
+    @Query('classId') classId: string,
+    @Query('facultyId') facultyId: string,
+    @Query('yearId') yearId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return await this.usersService.getUsers(
+      keyword,
+      classId,
+      facultyId,
+      yearId,
+      page,
+      limit,
+    );
   }
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.CREATED)
   @ResponseMessage('User created successfully')
-  @UseInterceptors(FileInterceptor('avatar'))
-  async createUser(
-    @Body() createUserDto: CreateUserDto,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.usersService.createUser(createUserDto, file);
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.createUser(createUserDto);
   }
 
   @Put(':id')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('User updated successfully')
   async updateUser(
     @Param('id') id: string,
@@ -78,7 +78,6 @@ export class UsersController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.NO_CONTENT)
   @ResponseMessage('User deleted successfully')
   deleteUser(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
@@ -86,7 +85,6 @@ export class UsersController {
 
   @Get('me/info')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('User retrieved successfully')
   async getMyÌno(@CurrentUser() user: User) {
     return this.usersService.getMyInfo(user.id);
@@ -94,7 +92,6 @@ export class UsersController {
 
   @Put('/me/update')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Your information updated successfully')
   @UseInterceptors(FileInterceptor('avatar'))
   async updateMyInfo(
@@ -107,7 +104,6 @@ export class UsersController {
 
   @Put('me/password')
   @UseGuards(AuthGuard('jwt'))
-  @HttpCode(HttpStatus.OK)
   @ResponseMessage('Your password updated successfully')
   async updateMyPassword(
     @CurrentUser() user: User,

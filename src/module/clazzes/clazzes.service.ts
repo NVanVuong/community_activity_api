@@ -24,7 +24,7 @@ export class ClazzesService {
     return await this.clazzRepository.find({
       where: [{ name: ILike(`%${keyword}%`) }],
       relations: ['faculty', 'academicYear'],
-      order: { faculty: { name: 'ASC' } },
+      order: { name: 'ASC' },
     });
   }
 

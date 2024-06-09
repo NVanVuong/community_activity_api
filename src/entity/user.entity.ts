@@ -1,4 +1,11 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+} from 'typeorm';
 import { Clazz } from './clazz.entity';
 import { Exclude } from 'class-transformer';
 import { Faculty } from './faculty.entity';
@@ -47,4 +54,7 @@ export class User {
 
   @OneToMany(() => UserActivity, (userActivity) => userActivity.user)
   userActivities: UserActivity[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

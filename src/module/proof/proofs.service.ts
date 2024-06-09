@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoleEnum } from 'src/common/enum/role.enum';
 import { Proof } from 'src/entity/proof.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { CreateProofDto } from './dto/create-proof.dto';
 import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
 import { User } from 'src/entity/user.entity';
@@ -16,8 +16,16 @@ export class ProofsService {
     private proofsRepository: Repository<Proof>,
   ) {}
 
-  async getProofs() {
-    return this.proofsRepository.find();
+  async getProofs(keyword: string = '') {
+    const proofs = await this.proofsRepository.find({
+      relations: ['userActivity.user', 'userActivity.user.clazz.faculty'],
+      where: [
+        { name: ILike(`%${keyword}%`) },
+        { userActivity: { user: { name: ILike(`%${keyword}%`) } } },
+      ],
+    });
+
+    return proofs;
   }
 
   async getProof(id: string) {
