@@ -8,12 +8,17 @@ import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
 import { User } from 'src/entity/user.entity';
 import { UserActivity } from 'src/entity/user-activity.entity';
 import { Activity } from 'src/entity/activity.entity';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { Subcategory } from 'src/entity/subcategory.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ProofsService {
   constructor(
     @InjectRepository(Proof)
     private proofsRepository: Repository<Proof>,
+    private cloudinaryService: CloudinaryService,
+    private mailService: MailService,
   ) {}
 
   async getProofs(keyword: string = '') {
@@ -50,9 +55,13 @@ export class ProofsService {
     return proofs;
   }
 
-  async getProofsOfUser(userId: string) {
+  async getMyProofs(userId: string, keyword: string = '') {
     return this.proofsRepository.find({
-      where: { userActivity: { user: { id: userId } } },
+      relations: ['userActivity.activity.subcategory'],
+      where: {
+        name: ILike(`%${keyword}%`),
+        userActivity: { user: { id: userId } },
+      },
     });
   }
 
@@ -76,7 +85,11 @@ export class ProofsService {
     });
   }
 
-  async submitProof(userActivityId: string, createProofDto: CreateProofDto) {
+  async submitProof(
+    userActivityId: string,
+    createProofDto: CreateProofDto,
+    file: Express.Multer.File,
+  ) {
     await this.proofsRepository.manager.transaction(
       async (transactionManager) => {
         const userActivity = await transactionManager.findOne(UserActivity, {
@@ -92,7 +105,12 @@ export class ProofsService {
           userActivity,
         });
 
-        userActivity.status = UserActivityStatusEnum.SubmittedProof;
+        if (file) {
+          const imageUrl = await this.cloudinaryService.uploadImage(file);
+          proof.image = imageUrl;
+        }
+
+        userActivity.status = UserActivityStatusEnum.Submitted;
 
         await transactionManager.save(UserActivity, userActivity);
         return await transactionManager.save(Proof, proof);
@@ -103,10 +121,16 @@ export class ProofsService {
   async submitProofForExternalActivity(
     createProofDto: CreateProofDto,
     user: User,
+    file: Express.Multer.File,
   ) {
     await this.proofsRepository.manager.transaction(async (manager) => {
+      const subcategory = await manager.findOne(Subcategory, {
+        where: { id: createProofDto.subcategoryId },
+      });
+
       const activity = manager.create(Activity, {
         ...createProofDto,
+        subcategory,
         createdId: user.id,
         isExternal: true,
       });
@@ -116,7 +140,7 @@ export class ProofsService {
       const userActivity = manager.create(UserActivity, {
         user,
         activity,
-        status: UserActivityStatusEnum.SubmittedProof,
+        status: UserActivityStatusEnum.Submitted,
       });
 
       await manager.save(UserActivity, userActivity);
@@ -125,6 +149,14 @@ export class ProofsService {
         ...createProofDto,
         userActivity,
       });
+
+      if (file) {
+        const imageUrl = await this.cloudinaryService.uploadImage(file);
+        proof.image = imageUrl;
+        activity.image = imageUrl;
+      }
+
+      await manager.save(Activity, activity);
 
       return await manager.save(Proof, proof);
     });
@@ -137,7 +169,7 @@ export class ProofsService {
         relations: ['userActivity', 'userActivity.user'],
       });
 
-      if (proof.userActivity.status !== UserActivityStatusEnum.SubmittedProof) {
+      if (proof.userActivity.status !== UserActivityStatusEnum.Submitted) {
         throw new BadRequestException('Proof is not submitted');
       }
 
@@ -147,7 +179,12 @@ export class ProofsService {
       proof.userActivity.user.score += proof.userActivity.activity.score;
       await manager.save(User, proof.userActivity.user);
 
-      return await manager.save(Proof, proof);
+      await manager.save(Proof, proof);
+
+      await this.mailService.sendProofApprovalEmail(
+        proof.userActivity.user,
+        proof,
+      );
     });
   }
 
@@ -155,7 +192,7 @@ export class ProofsService {
     await this.proofsRepository.manager.transaction(async (manager) => {
       const proof = await this.getProof(id);
 
-      if (proof.userActivity.status !== UserActivityStatusEnum.SubmittedProof) {
+      if (proof.userActivity.status !== UserActivityStatusEnum.Submitted) {
         throw new BadRequestException('Proof is not submitted');
       }
 
@@ -176,7 +213,7 @@ export class ProofsService {
         throw new BadRequestException('Proof is not rejected');
       }
 
-      proof.userActivity.status = UserActivityStatusEnum.SubmittedProof;
+      proof.userActivity.status = UserActivityStatusEnum.Submitted;
 
       Object.assign(proof, createProofDto);
 

@@ -8,6 +8,7 @@ export class ActivityDto extends Activity {
   description: string;
   image: string;
   maxParticipants: number;
+  participants: number;
   address: string;
   orangizer: string;
   startDate: Date;

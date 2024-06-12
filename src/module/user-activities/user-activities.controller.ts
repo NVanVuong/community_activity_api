@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { UserActivitiesService } from './user-activities.service';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
 import { AuthGuard } from '@nestjs/passport';
@@ -12,9 +12,9 @@ export class UserActivitiesController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Activities retrieved successfully')
-  getActivities(@CurrentUser() user: User) {
+  getActivities(@CurrentUser() user: User, @Query('keyword') keyword: string) {
     try {
-      return this.userActivitiesService.getMyActivities(user.id);
+      return this.userActivitiesService.getMyActivities(user.id, keyword);
     } catch (error) {
       return error;
     }

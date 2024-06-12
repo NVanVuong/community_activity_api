@@ -17,12 +17,16 @@ export class CategoriesService {
 
   async getCategories() {
     return await this.categoryRepository.find({
+      relations: ['subcategories'],
       order: { index: 'ASC' },
     });
   }
 
   async getCategory(id: string) {
-    const category = await this.categoryRepository.findOne({ where: { id } });
+    const category = await this.categoryRepository.findOne({
+      relations: ['subcategories'],
+      where: { id },
+    });
 
     if (!category) {
       throw new BadRequestException('Category not found');

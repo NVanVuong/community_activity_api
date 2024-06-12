@@ -6,7 +6,9 @@ import {
   Param,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ProofsService } from './proofs.service';
 import { CreateProofDto } from './dto/create-proof.dto';
@@ -14,6 +16,7 @@ import { CurrentUser } from 'src/decorator/current-user.decorator';
 import { User } from 'src/entity/user.entity';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('proofs')
 export class ProofsController {
@@ -24,6 +27,16 @@ export class ProofsController {
   @ResponseMessage('Proofs retrieved successfully')
   async getProofs(@Query('keyword') keyword: string = '') {
     return this.proofsService.getProofs(keyword);
+  }
+
+  @Get('me/')
+  @UseGuards(AuthGuard('jwt'))
+  @ResponseMessage('Proofs retrieved successfully')
+  getProofsOfUser(
+    @CurrentUser() user: User,
+    @Query('keyword') keyword: string,
+  ) {
+    return this.proofsService.getMyProofs(user.id, keyword);
   }
 
   @Get(':id')
@@ -40,13 +53,6 @@ export class ProofsController {
     return this.proofsService.getProofByUserActivity(userActivityId);
   }
 
-  @Get('myproofs')
-  @UseGuards(AuthGuard('jwt'))
-  @ResponseMessage('Proofs retrieved successfully')
-  getProofsOfUser(@CurrentUser() user: User) {
-    return this.proofsService.getProofsOfUser(user.id);
-  }
-
   @Get('class/:clazzId')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proofs retrieved successfully')
@@ -61,26 +67,35 @@ export class ProofsController {
     return this.proofsService.getProofsOfFaculty(facultyId);
   }
 
-  @Post(':userActivityId')
+  @Post(':userActivityId/submit')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof submitted successfully')
+  @UseInterceptors(FileInterceptor('image'))
   submitProof(
     @Param('userActivityId') userActivityId: string,
     @Body() createProofDto: CreateProofDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.proofsService.submitProof(userActivityId, createProofDto);
+    console.log('userActivityId', userActivityId);
+
+    console.log('submitProof', createProofDto);
+
+    return this.proofsService.submitProof(userActivityId, createProofDto, file);
   }
 
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof submitted for external activity successfully')
+  @UseInterceptors(FileInterceptor('image'))
   submitProofForExternalActivity(
     @Body() createProofDto: CreateProofDto,
     @CurrentUser() user: User,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return this.proofsService.submitProofForExternalActivity(
       createProofDto,
       user,
+      file,
     );
   }
 

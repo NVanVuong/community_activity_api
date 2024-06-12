@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserActivity } from 'src/entity/user-activity.entity';
-import { EntityManager, Not, Repository } from 'typeorm';
+import { EntityManager, ILike, Not, Repository } from 'typeorm';
 import { UserActivityDto } from './dto/user-activity.dto';
 import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
 
@@ -12,9 +12,10 @@ export class UserActivitiesService {
     private userActivityRepository: Repository<UserActivity>,
   ) {}
 
-  async getMyActivities(id: string) {
+  async getMyActivities(id: string, keyword: string) {
     return this.userActivityRepository.find({
-      where: { user: { id } },
+      relations: ['activity.subcategory'],
+      where: { user: { id }, activity: { name: ILike(`%${keyword}%`) } },
     });
   }
 

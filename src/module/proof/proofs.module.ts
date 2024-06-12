@@ -10,14 +10,23 @@ import { UsersModule } from '../users/users.module';
 import { UserActivity } from 'src/entity/user-activity.entity';
 import { User } from 'src/entity/user.entity';
 import { Activity } from 'src/entity/activity.entity';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { Subcategory } from 'src/entity/subcategory.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Proof, UserActivity, User, Activity]),
+    TypeOrmModule.forFeature([
+      Proof,
+      UserActivity,
+      User,
+      Activity,
+      Subcategory,
+    ]),
     AuthModule,
     UserActivitiesModule,
     ActivitiesModule,
     UsersModule,
+    CloudinaryModule,
   ],
   controllers: [ProofsController],
   providers: [ProofsService],

@@ -28,8 +28,18 @@ export class ActivitiesService {
 
   async getActivities(user: User, keyword: string) {
     const activities = await this.activityRepository.find({
-      where: [{ name: ILike(`%${keyword}%`) }],
-      relations: ['userActivities', 'userActivities.user', 'subcategory'],
+      where: [
+        {
+          name: ILike(`%${keyword}%`),
+          ...(user.role === RoleEnum.USER && { isExternal: false }),
+        },
+      ],
+      relations: [
+        'userActivities',
+        'userActivities.user',
+        'subcategory',
+        'subcategory.category',
+      ],
       order: { createdAt: 'DESC' },
     });
 
@@ -46,14 +56,28 @@ export class ActivitiesService {
 
         if (isRegistered) {
           activityDto.status = ActivityStatusEnum.Registered;
+        } else if (currentDate > activity.endDate) {
+          activityDto.status = ActivityStatusEnum.Completed;
+        } else if (currentDate > activity.endRegistration) {
+          activityDto.status = ActivityStatusEnum.RegistrationExpired;
+        } else if (
+          activity.participants >= activity.maxParticipants &&
+          activity.maxParticipants !== -1
+        ) {
+          activityDto.status = ActivityStatusEnum.Full;
         } else {
           activityDto.status = ActivityStatusEnum.RegistrationOpen;
         }
       } else {
         if (currentDate > activity.endDate) {
-          activityDto.status = ActivityStatusEnum.Expired;
+          activityDto.status = ActivityStatusEnum.Completed;
         } else if (currentDate > activity.endRegistration) {
           activityDto.status = ActivityStatusEnum.RegistrationExpired;
+        } else if (
+          activity.participants >= activity.maxParticipants &&
+          activity.maxParticipants !== -1
+        ) {
+          activityDto.status = ActivityStatusEnum.Full;
         } else {
           activityDto.status = ActivityStatusEnum.RegistrationOpen;
         }
@@ -79,9 +103,14 @@ export class ActivitiesService {
     const currentDate = new Date();
 
     if (currentDate > activity.endDate) {
-      activityDto.status = ActivityStatusEnum.Expired;
+      activityDto.status = ActivityStatusEnum.Completed;
     } else if (currentDate > activity.endRegistration) {
       activityDto.status = ActivityStatusEnum.RegistrationExpired;
+    } else if (
+      activity.participants >= activity.maxParticipants &&
+      activity.maxParticipants !== -1
+    ) {
+      activityDto.status = ActivityStatusEnum.Full;
     } else {
       activityDto.status = ActivityStatusEnum.RegistrationOpen;
     }
@@ -211,14 +240,13 @@ export class ActivitiesService {
   ) {
     if (
       action === ActivityActionEnum.Register &&
-      activityDto.participants >= activityDto.maxParticipants &&
-      activityDto.maxParticipants !== -1
+      activityDto.status === ActivityStatusEnum.Full
     ) {
       throw new BadRequestException('Activity participants is full');
     }
 
-    if (activityDto.status === ActivityStatusEnum.Expired) {
-      throw new BadRequestException('Activity is expired');
+    if (activityDto.status === ActivityStatusEnum.Completed) {
+      throw new BadRequestException('Activity has already ended');
     }
 
     if (activityDto.status === ActivityStatusEnum.RegistrationExpired) {

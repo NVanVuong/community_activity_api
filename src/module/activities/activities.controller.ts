@@ -33,7 +33,7 @@ export class ActivitiesController {
   @Get(':id')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Activity retrieved successfully')
-  getActivitysById(@Param('id') id: string) {
+  getActivityById(@Param('id') id: string) {
     return this.activitiesService.getActivity(id);
   }
 

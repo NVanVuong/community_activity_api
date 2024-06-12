@@ -12,12 +12,6 @@ export class Category {
   @Column({ type: 'int' })
   index: number;
 
-  @OneToMany(
-    () => Subcategory,
-    (activitySubcategory) => activitySubcategory.category,
-    {
-      eager: true,
-    },
-  )
+  @OneToMany(() => Subcategory, (subcategory) => subcategory.category)
   subcategories: Subcategory[];
 }

@@ -1,14 +1,15 @@
 export enum UserActivityStatusEnum {
   Registered = 'registered',
   Canceled = 'canceled',
-  SubmittedProof = 'submitted_proof',
+  Submitted = 'submitted',
   Approved = 'approved',
   Rejected = 'rejected',
 }
 
 export enum ActivityStatusEnum {
+  Registered = 'registered',
   RegistrationOpen = 'registration_open',
   RegistrationExpired = 'registration_expired',
-  Expired = 'expired',
-  Registered = 'registered',
+  Completed = 'completed',
+  Full = 'full',
 }
