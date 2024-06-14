@@ -6,9 +6,6 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   async sendProofApprovalEmail(user: any, proof: any) {
-    console.log('Sending proof approval email', user);
-    console.log('Sending proof approval email', proof);
-
     await this.mailerService.sendMail({
       to: user.email,
       subject: '[No-Reply] Your proof has been approved',
@@ -16,6 +13,21 @@ export class MailService {
       context: {
         name: user.name,
         activity: proof.userActivity.activity,
+      },
+    });
+  }
+
+  async sendProofRejectionEmail(user: any, proof: any, reason: string) {
+    console.log(user);
+
+    await this.mailerService.sendMail({
+      to: user.email,
+      subject: '[No-Reply] Your proof has been rejected',
+      template: './proof-reject',
+      context: {
+        name: user.name,
+        activity: proof.userActivity.activity,
+        reason: reason,
       },
     });
   }

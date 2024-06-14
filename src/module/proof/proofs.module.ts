@@ -12,6 +12,8 @@ import { User } from 'src/entity/user.entity';
 import { Activity } from 'src/entity/activity.entity';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Subcategory } from 'src/entity/subcategory.entity';
+import { Comment } from 'src/entity/comment.entity';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [
@@ -21,12 +23,14 @@ import { Subcategory } from 'src/entity/subcategory.entity';
       User,
       Activity,
       Subcategory,
+      Comment,
     ]),
     AuthModule,
     UserActivitiesModule,
     ActivitiesModule,
     UsersModule,
     CloudinaryModule,
+    RolesModule,
   ],
   controllers: [ProofsController],
   providers: [ProofsService],

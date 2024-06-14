@@ -11,6 +11,7 @@ import { Activity } from 'src/entity/activity.entity';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Subcategory } from 'src/entity/subcategory.entity';
 import { MailService } from '../mail/mail.service';
+import { Comment } from 'src/entity/comment.entity';
 
 @Injectable()
 export class ProofsService {
@@ -69,7 +70,12 @@ export class ProofsService {
     return this.proofsRepository.find({
       where: {
         userActivity: {
-          user: { clazz: { id: clazzId }, role: RoleEnum.USER },
+          user: {
+            clazz: { id: clazzId },
+            role: {
+              name: RoleEnum.USER,
+            },
+          },
         },
       },
     });
@@ -79,7 +85,12 @@ export class ProofsService {
     return this.proofsRepository.find({
       where: {
         userActivity: {
-          user: { clazz: { faculty: { id: facultyId } }, role: RoleEnum.USER },
+          user: {
+            clazz: { faculty: { id: facultyId } },
+            role: {
+              name: RoleEnum.USER,
+            },
+          },
         },
       },
     });
@@ -162,7 +173,7 @@ export class ProofsService {
     });
   }
 
-  async approveProof(id: string) {
+  async approveProof(user: User, id: string, commentContent?: string) {
     await this.proofsRepository.manager.transaction(async (manager) => {
       const proof = await manager.findOne(Proof, {
         where: { id },
@@ -174,6 +185,18 @@ export class ProofsService {
       }
 
       proof.userActivity.status = UserActivityStatusEnum.Approved;
+
+      if (commentContent) {
+        const comment = new Comment();
+        comment.content = commentContent;
+        comment.proof = proof;
+        comment.user = user;
+        console.log('comment', comment);
+
+        const newComment = await manager.save(Comment, comment);
+        proof.comments.push(newComment);
+      }
+
       await manager.save(UserActivity, proof.userActivity);
 
       proof.userActivity.user.score += proof.userActivity.activity.score;
@@ -188,20 +211,41 @@ export class ProofsService {
     });
   }
 
-  async rejectProof(id: string, comment: string) {
+  async rejectProof(user: User, id: string, commentContent: string) {
     await this.proofsRepository.manager.transaction(async (manager) => {
-      const proof = await this.getProof(id);
+      const proof = await manager.findOne(Proof, {
+        where: { id },
+        relations: ['userActivity', 'userActivity.user'],
+      });
 
       if (proof.userActivity.status !== UserActivityStatusEnum.Submitted) {
         throw new BadRequestException('Proof is not submitted');
       }
 
       proof.userActivity.status = UserActivityStatusEnum.Rejected;
-      proof.comment = comment;
+
+      if (!commentContent) {
+        throw new BadRequestException('Comment is required to reject proof');
+      }
+
+      const comment = new Comment();
+      comment.content = commentContent;
+      comment.proof = proof;
+      comment.user = user;
+      const newComment = await manager.save(Comment, comment);
+      proof.comments.push(newComment);
 
       await manager.save(UserActivity, proof.userActivity);
 
-      return await manager.save(Proof, proof);
+      await manager.save(Proof, proof);
+
+      console.log('proof', proof);
+
+      await this.mailService.sendProofRejectionEmail(
+        proof.userActivity.user,
+        proof,
+        commentContent,
+      );
     });
   }
 

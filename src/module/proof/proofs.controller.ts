@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ProofsService } from './proofs.service';
-import { CreateProofDto } from './dto/create-proof.dto';
+import { ConfirmProofDto, CreateProofDto } from './dto/create-proof.dto';
 import { CurrentUser } from 'src/decorator/current-user.decorator';
 import { User } from 'src/entity/user.entity';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
@@ -102,15 +102,23 @@ export class ProofsController {
   @Post(':id/approve')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof approved successfully')
-  approveProof(@Param('id') id: string) {
-    return this.proofsService.approveProof(id);
+  approveProof(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() confirmProofDto: ConfirmProofDto,
+  ) {
+    return this.proofsService.approveProof(user, id, confirmProofDto.comment);
   }
 
   @Post(':id/reject')
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proof rejected successfully')
-  rejectProof(@Param('id') id: string, @Body() comment: string) {
-    return this.proofsService.rejectProof(id, comment);
+  rejectProof(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() confirmProofDto: ConfirmProofDto,
+  ) {
+    return this.proofsService.rejectProof(user, id, confirmProofDto.comment);
   }
 
   @Post(':id/resubmit')

@@ -11,7 +11,8 @@ import { Exclude } from 'class-transformer';
 import { Faculty } from './faculty.entity';
 import { UUID } from 'crypto';
 import { UserActivity } from './user-activity.entity';
-import { RoleEnum } from 'src/common/enum/role.enum';
+import { Comment } from './comment.entity';
+import { Role } from './role.entity';
 
 @Entity()
 export class User {
@@ -43,8 +44,10 @@ export class User {
   @Column({ default: 0, nullable: true, type: 'int' })
   score: number;
 
-  @Column({ default: RoleEnum.USER })
-  role: RoleEnum;
+  @ManyToOne(() => Role, (role) => role.users, {
+    eager: true,
+  })
+  role: Role;
 
   @ManyToOne(() => Clazz, (clazz) => clazz.users, { eager: true })
   clazz: Clazz;
@@ -54,6 +57,9 @@ export class User {
 
   @OneToMany(() => UserActivity, (userActivity) => userActivity.user)
   userActivities: UserActivity[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments: Comment[];
 
   @DeleteDateColumn()
   deletedAt?: Date;

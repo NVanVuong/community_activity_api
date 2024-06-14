@@ -6,6 +6,7 @@ import { Activity } from 'src/entity/activity.entity';
 import { CategoriesModule } from '../categories/categories.module';
 import { UserActivitiesModule } from '../user-activities/user-activities.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { OrganizationsModule } from '../organization/organizations.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
     CategoriesModule,
     UserActivitiesModule,
     CloudinaryModule,
+    OrganizationsModule,
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],

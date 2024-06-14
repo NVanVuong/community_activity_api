@@ -3,7 +3,7 @@ import {
   Column,
   Entity,
   ManyToOne,
-  OneToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Activity } from './activity.entity';
@@ -26,6 +26,6 @@ export class UserActivity {
   })
   activity: Activity;
 
-  @OneToOne(() => Proof, (proof) => proof.userActivity)
-  proof: Proof;
+  @OneToMany(() => Proof, (proof) => proof.userActivity)
+  proofs: Proof;
 }

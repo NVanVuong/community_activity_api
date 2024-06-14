@@ -31,7 +31,7 @@ export class ActivitiesService {
       where: [
         {
           name: ILike(`%${keyword}%`),
-          ...(user.role === RoleEnum.USER && { isExternal: false }),
+          ...(user.role.name === RoleEnum.USER && { isExternal: false }),
         },
       ],
       relations: [
@@ -47,7 +47,7 @@ export class ActivitiesService {
     const activityDtos = activities.map((activity) => {
       const activityDto = plainToInstance(ActivityDto, activity);
 
-      if (user.role === RoleEnum.USER) {
+      if (user.role.name === RoleEnum.USER) {
         const isRegistered = activity.userActivities.some(
           (ua) =>
             ua.user.id === user.id &&

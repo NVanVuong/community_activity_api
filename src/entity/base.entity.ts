@@ -18,7 +18,6 @@ export abstract class Base extends BaseEntity {
   @Column({ nullable: true })
   updatedId: string;
 
-  @Exclude()
   @CreateDateColumn()
   createdAt: Date;
 

@@ -3,4 +3,6 @@ export enum RoleEnum {
   USER = 'user',
   CLASS = 'class',
   FACULTY = 'faculty',
+  YOUTH_UNION = 'youth_union',
+  UNION_BRANCH = 'union_branch',
 }

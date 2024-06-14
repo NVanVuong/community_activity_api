@@ -1,12 +1,15 @@
 import {
   Column,
   Entity,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Activity } from './activity.entity';
 import { Category } from './category.entity';
+import { Organization } from './organization.entity';
+import { Role } from './role.entity';
 
 @Entity()
 export class Subcategory {
@@ -27,4 +30,10 @@ export class Subcategory {
 
   @OneToMany(() => Activity, (activity) => activity.subcategory)
   activities: Activity[];
+
+  @ManyToMany(() => Organization, (organization) => organization.subcategories)
+  organizers: Organization[];
+
+  @ManyToMany(() => Role, (role) => role.subcategories)
+  roles: Role[];
 }

@@ -28,7 +28,7 @@ export class Activity extends Base {
   address: string;
 
   @Column({ nullable: true })
-  organizer: string;
+  organization: string;
 
   @Column({ nullable: true })
   startDate: Date;

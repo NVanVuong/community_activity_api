@@ -23,3 +23,7 @@ export class CreateProofDto {
   @IsOptional()
   subcategoryId: string;
 }
+
+export class ConfirmProofDto {
+  comment?: string;
+}

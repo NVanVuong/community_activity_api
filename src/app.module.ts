@@ -15,9 +15,11 @@ import { ConfigModule } from '@nestjs/config';
 import ormConfig from './config/orm.config';
 import { UsersModule } from './module/users/users.module';
 import { MailModule } from './module/mail/mail.module';
+import { OrganizationsModule } from './module/organization/organizations.module';
 
 @Module({
   imports: [
+    OrganizationsModule,
     MailModule,
     CloudinaryModule,
     ProofsModule,

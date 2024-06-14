@@ -19,6 +19,7 @@ import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { AuthService } from '../auth/auth.service';
 import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class UsersService {
@@ -29,6 +30,7 @@ export class UsersService {
     private facultiesService: FacultiesService,
     private cloudinaryService: CloudinaryService,
     private authService: AuthService,
+    private rolesService: RolesService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto) {
@@ -37,6 +39,8 @@ export class UsersService {
 
       const user = new User();
       user.id = uuidv4();
+
+      const roleEntity = await this.rolesService.getRoleByName(role);
 
       switch (role) {
         case RoleEnum.USER:
@@ -52,13 +56,13 @@ export class UsersService {
           break;
 
         default:
-          throw new BadRequestException('Invalid role');
+          break;
       }
 
       const salt = await bcrypt.genSalt();
       const hashPassword = await bcrypt.hash(DEFAULT_PASSWORD, salt);
       user.password = hashPassword;
-      user.role = role;
+      user.role = roleEntity;
 
       Object.assign(user, createUserDto);
 
@@ -85,7 +89,12 @@ export class UsersService {
     }
 
     const classAccount = await this.usersRepository.findOne({
-      where: { id: clazzId, role: RoleEnum.CLASS },
+      where: {
+        id: clazzId,
+        role: {
+          name: RoleEnum.CLASS,
+        },
+      },
     });
 
     if (classAccount) {
@@ -105,7 +114,12 @@ export class UsersService {
     }
 
     const facultyAccount = await this.usersRepository.findOne({
-      where: { id: facultyId, role: RoleEnum.FACULTY },
+      where: {
+        id: facultyId,
+        role: {
+          name: RoleEnum.FACULTY,
+        },
+      },
     });
 
     if (facultyAccount) {
@@ -259,7 +273,9 @@ export class UsersService {
         clazz: {
           id: clazzId,
         },
-        role: RoleEnum.USER,
+        role: {
+          name: RoleEnum.USER,
+        },
       },
     });
 

@@ -38,7 +38,7 @@ export class AuthService {
       username: user.username,
       name: user.name,
       avatar: user.avatar,
-      role: user.role,
+      role: user.role.name,
     };
 
     return { accessToken: await this.jwtService.sign(payload) };
@@ -50,7 +50,7 @@ export class AuthService {
       username: user.username,
       name: user.name,
       avatar: user.avatar,
-      role: user.role,
+      role: user.role.name,
     };
 
     return await this.jwtService.sign(payload);
