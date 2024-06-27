@@ -15,7 +15,8 @@ export class CreateActivityDto {
 
   address: string;
 
-  orangizer: string;
+  @IsOptional()
+  orangization: string;
 
   startDate: Date;
 

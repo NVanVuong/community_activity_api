@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Activity } from 'src/entity/activity.entity';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { User } from 'src/entity/user.entity';
@@ -15,6 +15,7 @@ import {
 } from 'src/common/enum/status.enum';
 import { RoleEnum } from 'src/common/enum/role.enum';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { Role } from 'src/entity/role.entity';
 
 @Injectable()
 export class ActivitiesService {
@@ -24,19 +25,64 @@ export class ActivitiesService {
     private categoriesService: CategoriesService,
     private userActivitiesService: UserActivitiesService,
     private cloudinaryService: CloudinaryService,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) {}
 
-  async getActivities(user: User, keyword: string) {
-    const activities = await this.activityRepository.find({
-      where: [
-        {
+  async getActivities(currentUser: User, keyword: string) {
+    const roleSubcategories = await this.roleRepository.findOne({
+      where: { id: currentUser.role.id },
+      relations: ['subcategories'],
+    });
+
+    const subcategoryIds = roleSubcategories.subcategories.map((sub) => sub.id);
+
+    const where: any[] = [];
+
+    if (currentUser.role.name === RoleEnum.CLASS) {
+      return [];
+    }
+
+    const allowedOrganizations = [
+      'Đại học Đà Nẵng',
+      'Đại học Bách Khoa',
+      currentUser?.clazz?.faculty?.name,
+    ];
+
+    switch (currentUser.role.name) {
+      case RoleEnum.ADMIN:
+      case RoleEnum.YOUTH_UNION:
+      case RoleEnum.FACULTY:
+      case RoleEnum.UNION_BRANCH:
+        where.push(
+          {
+            name: ILike(`%${keyword}%`),
+            createdId: currentUser.id,
+          },
+          {
+            name: ILike(`%${keyword}%`),
+            isExternal: true,
+            subcategory: { id: In(subcategoryIds) },
+          },
+        );
+        break;
+
+      case RoleEnum.USER:
+      default:
+        where.push({
           name: ILike(`%${keyword}%`),
-          ...(user.role.name === RoleEnum.USER && { isExternal: false }),
-        },
-      ],
+          isExternal: false,
+          organization: In(allowedOrganizations),
+        });
+        break;
+    }
+
+    const activities = await this.activityRepository.find({
+      where,
       relations: [
         'userActivities',
         'userActivities.user',
+        'userActivities.user.clazz.faculty',
         'subcategory',
         'subcategory.category',
       ],
@@ -47,10 +93,10 @@ export class ActivitiesService {
     const activityDtos = activities.map((activity) => {
       const activityDto = plainToInstance(ActivityDto, activity);
 
-      if (user.role.name === RoleEnum.USER) {
+      if (currentUser.role.name === RoleEnum.USER) {
         const isRegistered = activity.userActivities.some(
           (ua) =>
-            ua.user.id === user.id &&
+            ua.user.id === currentUser.id &&
             ua.status !== UserActivityStatusEnum.Canceled,
         );
 
@@ -87,6 +133,10 @@ export class ActivitiesService {
     });
 
     return activityDtos;
+  }
+
+  async getParticipants(activityId: string) {
+    return this.userActivitiesService.getParticipants(activityId);
   }
 
   async getActivity(id: string) {

@@ -7,14 +7,17 @@ import { CategoriesModule } from '../categories/categories.module';
 import { UserActivitiesModule } from '../user-activities/user-activities.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { OrganizationsModule } from '../organization/organizations.module';
+import { RolesModule } from '../roles/roles.module';
+import { Role } from 'src/entity/role.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity]),
+    TypeOrmModule.forFeature([Activity, Role]),
     CategoriesModule,
     UserActivitiesModule,
     CloudinaryModule,
     OrganizationsModule,
+    RolesModule,
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService],

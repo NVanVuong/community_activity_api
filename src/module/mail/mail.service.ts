@@ -18,8 +18,6 @@ export class MailService {
   }
 
   async sendProofRejectionEmail(user: any, proof: any, reason: string) {
-    console.log(user);
-
     await this.mailerService.sendMail({
       to: user.email,
       subject: '[No-Reply] Your proof has been rejected',

@@ -25,8 +25,11 @@ export class ProofsController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Proofs retrieved successfully')
-  async getProofs(@Query('keyword') keyword: string = '') {
-    return this.proofsService.getProofs(keyword);
+  async getProofs(
+    @CurrentUser() user: User,
+    @Query('keyword') keyword: string = '',
+  ) {
+    return this.proofsService.getProofs(user, keyword);
   }
 
   @Get('me/')
@@ -76,10 +79,6 @@ export class ProofsController {
     @Body() createProofDto: CreateProofDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log('userActivityId', userActivityId);
-
-    console.log('submitProof', createProofDto);
-
     return this.proofsService.submitProof(userActivityId, createProofDto, file);
   }
 

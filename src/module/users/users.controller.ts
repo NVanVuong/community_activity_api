@@ -42,6 +42,7 @@ export class UsersController {
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Users retrieved successfully')
   async getUsers(
+    @CurrentUser() currentUser: User,
     @Query('keyword') keyword: string,
     @Query('classId') classId: string,
     @Query('facultyId') facultyId: string,
@@ -50,6 +51,7 @@ export class UsersController {
     @Query('limit') limit: number = 10,
   ) {
     return await this.usersService.getUsers(
+      currentUser,
       keyword,
       classId,
       facultyId,

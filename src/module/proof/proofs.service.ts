@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RoleEnum } from 'src/common/enum/role.enum';
 import { Proof } from 'src/entity/proof.entity';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { CreateProofDto } from './dto/create-proof.dto';
 import { UserActivityStatusEnum } from 'src/common/enum/status.enum';
 import { User } from 'src/entity/user.entity';
@@ -12,6 +12,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Subcategory } from 'src/entity/subcategory.entity';
 import { MailService } from '../mail/mail.service';
 import { Comment } from 'src/entity/comment.entity';
+import { Role } from 'src/entity/role.entity';
 
 @Injectable()
 export class ProofsService {
@@ -20,15 +21,76 @@ export class ProofsService {
     private proofsRepository: Repository<Proof>,
     private cloudinaryService: CloudinaryService,
     private mailService: MailService,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) {}
 
-  async getProofs(keyword: string = '') {
+  async getProofs(currentUser: User, keyword: string = '') {
+    const roleSubcategories = await this.roleRepository.findOne({
+      where: { id: currentUser.role.id },
+      relations: ['subcategories'],
+    });
+
+    const subcategoryIds = roleSubcategories.subcategories.map((sub) => sub.id);
+
+    let where: any = [
+      {
+        name: ILike(`%${keyword}%`),
+        userActivity: {
+          user: { name: ILike(`%${keyword}%`) },
+          activity: { subcategory: { id: In(subcategoryIds) } },
+        },
+      },
+    ];
+
+    switch (currentUser.role.name) {
+      case RoleEnum.ADMIN:
+      case RoleEnum.YOUTH_UNION:
+        break;
+
+      case RoleEnum.FACULTY:
+      case RoleEnum.UNION_BRANCH:
+        where = where.map((condition) => ({
+          ...condition,
+          userActivity: {
+            ...condition.userActivity,
+            user: {
+              ...condition.userActivity.user,
+              clazz: { faculty: { id: currentUser.faculty.id } },
+            },
+          },
+        }));
+        break;
+
+      case RoleEnum.CLASS:
+        where = where.map((condition) => ({
+          ...condition,
+          userActivity: {
+            ...condition.userActivity,
+            user: { clazz: { id: currentUser.clazz.id } },
+          },
+        }));
+        break;
+
+      case RoleEnum.USER:
+      default:
+        where = where.map((condition) => ({
+          ...condition,
+          userActivity: {
+            ...condition.userActivity,
+            user: { id: currentUser.id },
+          },
+        }));
+        break;
+    }
+
     const proofs = await this.proofsRepository.find({
-      relations: ['userActivity.user', 'userActivity.user.clazz.faculty'],
-      where: [
-        { name: ILike(`%${keyword}%`) },
-        { userActivity: { user: { name: ILike(`%${keyword}%`) } } },
+      relations: [
+        'userActivity.user',
+        'userActivity.user.clazz.faculty',
+        'userActivity.activity.subcategory',
       ],
+      where,
     });
 
     return proofs;
@@ -191,7 +253,6 @@ export class ProofsService {
         comment.content = commentContent;
         comment.proof = proof;
         comment.user = user;
-        console.log('comment', comment);
 
         const newComment = await manager.save(Comment, comment);
         proof.comments.push(newComment);
@@ -238,8 +299,6 @@ export class ProofsService {
       await manager.save(UserActivity, proof.userActivity);
 
       await manager.save(Proof, proof);
-
-      console.log('proof', proof);
 
       await this.mailService.sendProofRejectionEmail(
         proof.userActivity.user,

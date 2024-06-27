@@ -13,6 +13,8 @@ import { ClazzesService } from './clazzes.service';
 import { ClazzDto } from './dto/clazz.dto';
 import { ResponseMessage } from 'src/decorator/respone-message.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from 'src/decorator/current-user.decorator';
+import { User } from 'src/entity/user.entity';
 
 @Controller('classes')
 export class ClazzesController {
@@ -21,8 +23,8 @@ export class ClazzesController {
   @Get()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Classes retrieved successfully')
-  getClazzes(@Query('keyword') keyword: string) {
-    return this.clazzesService.getClazzes(keyword);
+  getClazzes(@CurrentUser() user: User, @Query('keyword') keyword: string) {
+    return this.clazzesService.getClazzes(user, keyword);
   }
 
   @Get(':id')

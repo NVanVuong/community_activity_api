@@ -37,6 +37,13 @@ export class ActivitiesController {
     return this.activitiesService.getActivity(id);
   }
 
+  @Get('/participants/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @ResponseMessage('Participants retrieved successfully')
+  getParticipants(@Param('id') id: string) {
+    return this.activitiesService.getParticipants(id);
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Activity created successfully')

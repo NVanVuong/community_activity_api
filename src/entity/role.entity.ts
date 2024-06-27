@@ -28,6 +28,8 @@ export class Role {
   users: User[];
 
   @ManyToMany(() => Subcategory, (subcategory) => subcategory.roles)
-  @JoinTable()
+  @JoinTable({
+    name: 'role_hierarchy',
+  })
   subcategories: Subcategory[];
 }

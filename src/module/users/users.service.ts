@@ -228,6 +228,7 @@ export class UsersService {
   }
 
   async getUsers(
+    currentUser: User,
     keyword: string,
     clazzId: string,
     facultyId: string,
@@ -242,14 +243,38 @@ export class UsersService {
     if (keyword) {
       where.name = ILike(`%${keyword}%`);
     }
+
     if (clazzId) {
       where.clazz = { id: clazzId };
     }
+
     if (facultyId) {
-      where.clazz = { ...where.clazz, faculty: { id: facultyId } };
+      if (!where.clazz) where.clazz = {};
+      where.clazz.faculty = { id: facultyId };
     }
+
     if (yearId) {
-      where.clazz = { ...where.clazz, academicYear: { id: yearId } };
+      if (!where.clazz) where.clazz = {};
+      where.clazz.academicYear = { id: yearId };
+    }
+
+    switch (currentUser.role.name) {
+      case RoleEnum.ADMIN:
+      case RoleEnum.YOUTH_UNION:
+        break;
+      case RoleEnum.FACULTY:
+      case RoleEnum.UNION_BRANCH:
+        if (!where.clazz) where.clazz = {};
+        where.clazz.faculty = { id: currentUser.faculty.id };
+        break;
+      case RoleEnum.CLASS:
+        where.clazz = { id: currentUser.clazz.id };
+        break;
+      case RoleEnum.USER:
+        where.id = currentUser.id;
+        break;
+      default:
+        throw new Error('Unsupported role');
     }
 
     const [users, total] = await this.usersRepository.findAndCount({

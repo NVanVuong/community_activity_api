@@ -10,6 +10,8 @@ import { ILike, Repository } from 'typeorm';
 import { ClazzDto } from './dto/clazz.dto';
 import { FacultiesService } from '../faculties/faculties.service';
 import { AcademicYearsService } from '../academic-years/academic-years.service';
+import { User } from 'src/entity/user.entity';
+import { RoleEnum } from 'src/common/enum/role.enum';
 
 @Injectable()
 export class ClazzesService {
@@ -20,12 +22,35 @@ export class ClazzesService {
     private readonly academicYearsService: AcademicYearsService,
   ) {}
 
-  async getClazzes(keyword: string) {
-    return await this.clazzRepository.find({
-      where: [{ name: ILike(`%${keyword}%`) }],
+  async getClazzes(user: User, keyword: string) {
+    const where: any = {};
+
+    if (keyword) {
+      where.name = ILike(`%${keyword}%`);
+    }
+
+    switch (user.role.name) {
+      case RoleEnum.ADMIN:
+      case RoleEnum.YOUTH_UNION:
+        break;
+      case RoleEnum.FACULTY:
+      case RoleEnum.UNION_BRANCH:
+        where.faculty = { id: user.faculty.id };
+        break;
+      case RoleEnum.CLASS:
+        where.id = user.clazz.id;
+        break;
+      default:
+        return [];
+    }
+
+    const clazzes = await this.clazzRepository.find({
+      where,
       relations: ['faculty', 'academicYear'],
       order: { name: 'ASC' },
     });
+
+    return clazzes;
   }
 
   async getClazz(id: string) {

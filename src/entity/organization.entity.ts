@@ -4,7 +4,6 @@ import {
   Column,
   ManyToMany,
   JoinTable,
-  OneToMany,
 } from 'typeorm';
 import { Subcategory } from './subcategory.entity';
 
@@ -17,6 +16,8 @@ export class Organization {
   name: string;
 
   @ManyToMany(() => Subcategory, (subcategory) => subcategory.organizers)
-  @JoinTable()
+  @JoinTable({
+    name: 'Organization_hierarchy',
+  })
   subcategories: Subcategory[];
 }

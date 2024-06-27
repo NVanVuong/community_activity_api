@@ -33,6 +33,13 @@ export class RolesController {
     return await this.rolesService.getRole(id);
   }
 
+  @Get(':id/subcategories')
+  @UseGuards(AuthGuard('jwt'))
+  @ResponseMessage('Subcategories retrieved successfully')
+  async getRoleSubcategories(@Param('id') id: string) {
+    return await this.rolesService.getRoleSubcategories(id);
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @ResponseMessage('Role created successfully')

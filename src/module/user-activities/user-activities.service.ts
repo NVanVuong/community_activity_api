@@ -41,6 +41,7 @@ export class UserActivitiesService {
         activity: { id: activityId },
         status: Not(UserActivityStatusEnum.Canceled),
       },
+      relations: ['user', 'user.clazz', 'user.clazz.faculty'],
     });
 
     return participants;

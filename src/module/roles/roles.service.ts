@@ -82,4 +82,17 @@ export class RolesService {
     role.subcategories.push(...newSubcategories);
     return this.rolesRepository.save(role);
   }
+
+  async getRoleSubcategories(id: string) {
+    const role = await this.rolesRepository.findOne({
+      where: { id },
+      relations: ['subcategories'],
+    });
+
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+
+    return role.subcategories;
+  }
 }

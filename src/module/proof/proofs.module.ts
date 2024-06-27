@@ -14,6 +14,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { Subcategory } from 'src/entity/subcategory.entity';
 import { Comment } from 'src/entity/comment.entity';
 import { RolesModule } from '../roles/roles.module';
+import { Role } from 'src/entity/role.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RolesModule } from '../roles/roles.module';
       Activity,
       Subcategory,
       Comment,
+      Role,
     ]),
     AuthModule,
     UserActivitiesModule,
