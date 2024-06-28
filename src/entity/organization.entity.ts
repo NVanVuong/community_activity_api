@@ -17,7 +17,7 @@ export class Organization {
 
   @ManyToMany(() => Subcategory, (subcategory) => subcategory.organizers)
   @JoinTable({
-    name: 'Organization_hierarchy',
+    name: 'organization_hierarchy',
   })
   subcategories: Subcategory[];
 }
